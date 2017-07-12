@@ -21,84 +21,84 @@
 		reg = <0x80000000 0x20000000>; /* 512 MB */
 	};
 
-        vmmc_fixed: vmmc {
-                /*compatible = "regulator-always-on";*/
-                compatible = "regulator-fixed";
-                regulator-name = "vmmc_fixed";
-                regulator-min-microvolt = <3300000>;
-                regulator-max-microvolt = <3300000>;
-        };
+	vmmc_fixed: vmmc {
+			/*compatible = "regulator-always-on";*/
+			compatible = "regulator-fixed";
+			regulator-name = "vmmc_fixed";
+			regulator-min-microvolt = <3300000>;
+			regulator-max-microvolt = <3300000>;
+	};
+	
+	ocp {
+		gpmc: gpmc@6e000000 { 
+			nand@0,0 {
+				compatible = "fixed-partitions";
+				#address-cells = <1>;
+				#size-cells = <1>;
 
-
-	flash@0 {
-		partitions {
-			compatible = "fixed-partitions";
-			#address-cells = <1>;
-			#size-cells = <1>;
-
-			partition@0 {
-				label = "x-loader";
-				reg = <0x0000000 0x00080000>;
-				read-only;
-			};
+				partition@0 {
+					label = "x-loader";
+					reg = <0x0000000 0x00080000>;
+					read-only;
+				};
 		
-			partition@1 {
-				label = "uboot";
-				reg = <0x00080000 0x001c0000>;
-				read-only;
-			};
+				partition@0x00080000 {
+					label = "uboot";
+					reg = <0x00080000 0x001c0000>;
+					read-only;
+				};
 		
-			partition@2 {
-				label = "uboot-params";
-				reg = <0x00240000 0x00002000>;
-				read-only;
-			};
+				partition@0x00240000 {
+					label = "uboot-params";
+					reg = <0x00240000 0x00002000>;
+					read-only;
+				};
 		
-			partition@3 {
-				label = "uboot-params-recovery";
-				reg = <0x00260000 0x00002000>;
-				read-only;
-			};
+				partition@0x00260000 {
+					label = "uboot-params-recovery";
+					reg = <0x00260000 0x00002000>;
+					read-only;
+				};
 		
-			partition@4 {
-				label = "linux-kernel";
-				reg = <0x00280000 0x00500000>;
-				read-only;
-			};
+				partition@0x00280000 {
+					label = "linux-kernel";
+					reg = <0x00280000 0x00500000>;
+					read-only;
+				};
 		
-			partition@5 {
-				label = "linux-kernel-recovery";
-				reg = <0x00780000 0x00500000>;
-				read-only;
-			};
+				partition@0x00780000 {
+					label = "linux-kernel-recovery";
+					reg = <0x00780000 0x00500000>;
+					read-only;
+				};
 		
-			partition@6 {
-				label = "rootfs-recovery";
-				reg = <0x00c80000 0x02000000>;
-			};
+				partition@0x00c80000 {
+					label = "rootfs-recovery";
+					reg = <0x00c80000 0x02000000>;
+				};
 		
-			partition@7 {
-				label = "mfg";
-				reg = <0x02c80000 0x00500000>;
-			};
+				partition@0x02c80000 {
+					label = "mfg";
+					reg = <0x02c80000 0x00500000>;
+				};
 		
-			partition@8 {
-				label = "config";
-				reg = <0x03180000 0x00a00000>;
-			};
+				partition@0x03180000 {
+					label = "config";
+					reg = <0x03180000 0x00a00000>;
+				};
 		
-			partition@9 {
-				label = "cache";
-				reg = <0x03b80000 0x01e00000>;
-			};
+				partition@0x03b80000 {
+					label = "cache";
+					reg = <0x03b80000 0x01e00000>;
+				};
 		
-			partition@10 {
-				label = "rootfs";
-				reg = <0x05980000 0x0a680000>;
+				partition@0x05980000 {
+					label = "rootfs";
+					reg = <0x05980000 0x0a680000>;
+				};
 			};
 		};
 	};
-
         clk_audio_fixed: clk_audio_fixed {
                 #clock-cells = <0>;
                 compatible = "fixed-clock";
