@@ -32,6 +32,8 @@
 	ocp {
 		gpmc: gpmc@6e000000 { 
 			nand@0,0 {
+				reg = <0 0 0>;
+				nand-bus-width = <16>;
 				compatible = "fixed-partitions";
 				#address-cells = <1>;
 				#size-cells = <1>;
