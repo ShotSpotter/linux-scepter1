@@ -33,74 +33,93 @@
 		gpmc: gpmc@6e000000 { 
 			ranges = <0 0 0x00000000 0x10000000>;	/* CS0 0 ADDRESS SIZE */
 			nand@0,0 {
+				compatible = "ti,omap2-nand";
 				reg = <0 0 4>;
 				nand-bus-width = <16>;
-				compatible = "fixed-partitions";
 				#address-cells = <1>;
 				#size-cells = <1>;
 				linux,mtd-name= "micron,nand";
 				gpmc,device-width = <2>;
 				ti,nand-ecc-opt = "bch4";
-
-				partition@0 {
-					label = "x-loader";
-					reg = <0x0000000 0x00080000>;
-					read-only;
-				};
+				gpmc,sync-clk-ps = <0>;
+				gpmc,cs-on-ns = <0>;
+				gpmc,cs-rd-off-ns = <44>;
+				gpmc,cs-wr-off-ns = <44>;
+				gpmc,adv-on-ns = <6>;
+				gpmc,adv-rd-off-ns = <34>;
+				gpmc,adv-wr-off-ns = <44>;
+				gpmc,we-off-ns = <40>;
+				gpmc,oe-off-ns = <54>;
+				gpmc,access-ns = <64>;
+				gpmc,rd-cycle-ns = <82>;
+				gpmc,wr-cycle-ns = <82>;
+				gpmc,wr-access-ns = <40>;
+				gpmc,wr-data-mux-bus-ns = <0>;
+				
+				partitions {
+					#address-cells = <1>;
+					#size-cells = <1>;
+					compatible = "fixed-partitions";
+					partition@0 {
+						label = "x-loader";
+						reg = <0x0000000 0x00080000>;
+						read-only;
+					};
 		
-				partition@0x00080000 {
-					label = "uboot";
-					reg = <0x00080000 0x001c0000>;
-					read-only;
-				};
+					partition@0x00080000 {
+						label = "uboot";
+						reg = <0x00080000 0x001c0000>;
+						read-only;
+					};
 		
-				partition@0x00240000 {
-					label = "uboot-params";
-					reg = <0x00240000 0x00002000>;
-					read-only;
-				};
+					partition@0x00240000 {
+						label = "uboot-params";
+						reg = <0x00240000 0x00002000>;
+						read-only;
+					};
 		
-				partition@0x00260000 {
-					label = "uboot-params-recovery";
-					reg = <0x00260000 0x00002000>;
-					read-only;
-				};
+					partition@0x00260000 {
+						label = "uboot-params-recovery";
+						reg = <0x00260000 0x00002000>;
+						read-only;
+					};
 		
-				partition@0x00280000 {
-					label = "linux-kernel";
-					reg = <0x00280000 0x00500000>;
-					read-only;
-				};
+					partition@0x00280000 {
+						label = "linux-kernel";
+						reg = <0x00280000 0x00500000>;
+						read-only;
+					};
 		
-				partition@0x00780000 {
-					label = "linux-kernel-recovery";
-					reg = <0x00780000 0x00500000>;
-					read-only;
-				};
+					partition@0x00780000 {
+						label = "linux-kernel-recovery";
+						reg = <0x00780000 0x00500000>;
+						read-only;
+					};
 		
-				partition@0x00c80000 {
-					label = "rootfs-recovery";
-					reg = <0x00c80000 0x02000000>;
-				};
+					partition@0x00c80000 {
+						label = "rootfs-recovery";
+						reg = <0x00c80000 0x02000000>;
+					};
 		
-				partition@0x02c80000 {
-					label = "mfg";
-					reg = <0x02c80000 0x00500000>;
-				};
+					partition@0x02c80000 {
+						label = "mfg";
+						reg = <0x02c80000 0x00500000>;
+					};
 		
-				partition@0x03180000 {
-					label = "config";
-					reg = <0x03180000 0x00a00000>;
-				};
+					partition@0x03180000 {
+						label = "config";
+						reg = <0x03180000 0x00a00000>;
+					};
 		
-				partition@0x03b80000 {
-					label = "cache";
-					reg = <0x03b80000 0x01e00000>;
-				};
+					partition@0x03b80000 {
+						label = "cache";
+						reg = <0x03b80000 0x01e00000>;
+					};
 		
-				partition@0x05980000 {
-					label = "rootfs";
-					reg = <0x05980000 0x0a680000>;
+					partition@0x05980000 {
+						label = "rootfs";
+						reg = <0x05980000 0x0a680000>;
+					};
 				};
 			};
 		};
