@@ -27,112 +27,6 @@
 		regulator-max-microvolt = <3300000>;
 	};
 	
-	ocp {
-		gpmc: gpmc@6e000000 { 
-			ranges = <0 0 0x00000000 0x10000000>;	/* CS0 0 ADDRESS SIZE */
-			nand@0,0 {
-				compatible = "ti,omap2-nand";
-				reg = <0 0 0>;
-				interrupt-parent = <&gpmc>;
-				nand-bus-width = <16>;
-				#address-cells = <1>;
-				#size-cells = <1>;
-				linux,mtd-name= "micron,nand";
-				gpmc,device-nand;
-				gpmc,device-width = <2>;
-				/*
-				* We should be using BCH8, but in field upgrades would be impossible.
-				* This is a compromise for backwards compatibility. We're not making
-				* things any worse than they already are.
-				*/
-				ti,nand-ecc-opt = "sw"; /* Software 1 bit Hamming */ 
-				/* L3 interconnect frequency = GPMC_FCLK = 166MHz => clock cycle = 6 ns*/
-				/* gpmc,sync-clk-ps = <0>; */ /* N/A because we're async*/
-				gpmc,cs-on-ns = <0>; /* 0 clock cycles */
-				gpmc,cs-rd-off-ns = <120>; /* 20 clock cycles */
-				gpmc,cs-wr-off-ns = <120>; /* 20 clock cycles */
-				gpmc,adv-on-ns = <0>; /* 0 clock cycles */
-				gpmc,adv-rd-off-ns = <120>; /* 20 clock cycles */
-				gpmc,adv-wr-off-ns = <120>; /* 20 clock cycles */
-				gpmc,we-on-ns = <6>; /* 1 clock cycle */
-				gpmc,we-off-ns = <90>; /* 15 clock cycles */
-				gpmc,oe-on-ns = <6>; /* 1 clock cycle */
-				gpmc,oe-off-ns = <90>; /* 15 clock cycles */
-				gpmc,page-burst-access-ns = <>; /* 1 clock cycle */
-				gpmc,access-ns = <72>; /* 12 cycles */
-				gpmc,rd-cycle-ns = <120>; /* 20 cycles */
-				gpmc,wr-cycle-ns = <120>; /* 20 cycles */
-				gpmc,bus-turnaround-ns = <0>; /* 0 cycles */ 
-				gpmc,cycle2cycle-delay-ns = <60>; /* 10 cycles */
-				gpmc,clk-activation-ns = <6>; /* 1 cycle */
-				gpmc,cycle2cycle-samecsen; /* boolean */
-				/* N/A */
-				/* gpmc,wr-access-ns = <>;
-				gpmc,wr-data-mux-bus-ns = <>; */
-				
-				partition@0 {
-					label = "uboot-spl";
-					reg = <0x0000000 0x00080000>;
-					read-only;
-				};
-	
-				partition@0x00080000 {
-					label = "uboot";
-					reg = <0x00080000 0x001c0000>;
-					/* read-only; */
-				};
-	
-				partition@0x00240000 {
-					label = "uboot-params";
-					reg = <0x00240000 0x00002000>;
-					/* read-only; */
-				};
-	
-				partition@0x00260000 {
-					label = "uboot-params-recovery";
-					reg = <0x00260000 0x00002000>;
-					/* read-only; */
-				};
-	
-				partition@0x00280000 {
-					label = "linux-kernel";
-					reg = <0x00280000 0x00500000>;
-					/* read-only; */
-				};
-	
-				partition@0x00780000 {
-					label = "linux-kernel-recovery";
-					reg = <0x00780000 0x00500000>;
-					/* read-only; */
-				};
-	
-				partition@0x00c80000 {
-					label = "rootfs-recovery";
-					reg = <0x00c80000 0x02000000>;
-				};
-	
-				partition@0x02c80000 {
-					label = "mfg";
-					reg = <0x02c80000 0x00500000>;
-				};
-	
-				partition@0x03180000 {
-					label = "config";
-					reg = <0x03180000 0x00a00000>;
-				};
-	
-				partition@0x03b80000 {
-					label = "cache";
-					reg = <0x03b80000 0x01e00000>;
-				};
-	
-				partition@0x05980000 {
-					label = "rootfs";
-					reg = <0x05980000 0x0a680000>;
-				};
-			};
-		};
-	};
 	clk_audio_fixed: clk_audio_fixed {
 		#clock-cells = <0>;
 		compatible = "fixed-clock";
@@ -162,6 +56,7 @@
 		  };*/
 	};
 }; /* / */
+
 
 
 &am35x_otg_hs {
@@ -551,3 +446,108 @@
 	};
 
 } ;
+
+&gpmc {
+	ranges = <0 0 0x00000000 0x10000000>;	/* CS0 0 ADDRESS SIZE */
+	nand@0,0 {
+		compatible = "ti,omap2-nand";
+		reg = <0 0 0>;
+		interrupt-parent = <&gpmc>;
+		nand-bus-width = <16>;
+		#address-cells = <1>;
+		#size-cells = <1>;
+		linux,mtd-name= "micron,nand";
+		gpmc,device-nand;
+		gpmc,device-width = <2>;
+		/*
+		* We should be using BCH8, but in field upgrades would be impossible.
+		* This is a compromise for backwards compatibility. We're not making
+		* things any worse than they already are.
+		*/
+		ti,nand-ecc-opt = "sw"; /* Software 1 bit Hamming */
+		/* L3 interconnect frequency = GPMC_FCLK = 166MHz => clock cycle = 6 ns*/
+		/* gpmc,sync-clk-ps = <0>; */ /* N/A because we're async*/
+		gpmc,cs-on-ns = <0>; /* 0 clock cycles */
+		gpmc,cs-rd-off-ns = <120>; /* 20 clock cycles */
+		gpmc,cs-wr-off-ns = <120>; /* 20 clock cycles */
+		gpmc,adv-on-ns = <0>; /* 0 clock cycles */
+		gpmc,adv-rd-off-ns = <120>; /* 20 clock cycles */
+		gpmc,adv-wr-off-ns = <120>; /* 20 clock cycles */
+		gpmc,we-on-ns = <6>; /* 1 clock cycle */
+		gpmc,we-off-ns = <90>; /* 15 clock cycles */
+		gpmc,oe-on-ns = <6>; /* 1 clock cycle */
+		gpmc,oe-off-ns = <90>; /* 15 clock cycles */
+		gpmc,page-burst-access-ns = <>; /* 1 clock cycle */
+		gpmc,access-ns = <72>; /* 12 cycles */
+		gpmc,rd-cycle-ns = <120>; /* 20 cycles */
+		gpmc,wr-cycle-ns = <120>; /* 20 cycles */
+		gpmc,bus-turnaround-ns = <0>; /* 0 cycles */
+		gpmc,cycle2cycle-delay-ns = <60>; /* 10 cycles */
+		gpmc,clk-activation-ns = <6>; /* 1 cycle */
+		gpmc,cycle2cycle-samecsen; /* boolean */
+		/* N/A */
+		/* gpmc,wr-access-ns = <>;
+		gpmc,wr-data-mux-bus-ns = <>; */
+
+		partition@0 {
+			label = "uboot-spl";
+			reg = <0x0000000 0x00080000>;
+			read-only;
+		};
+
+		partition@0x00080000 {
+			label = "uboot";
+			reg = <0x00080000 0x001c0000>;
+			/* read-only; */
+		};
+
+		partition@0x00240000 {
+			label = "uboot-params";
+			reg = <0x00240000 0x00002000>;
+			/* read-only; */
+		};
+
+		partition@0x00260000 {
+			label = "uboot-params-recovery";
+			reg = <0x00260000 0x00002000>;
+			/* read-only; */
+		};
+
+		partition@0x00280000 {
+			label = "linux-kernel";
+			reg = <0x00280000 0x00500000>;
+			/* read-only; */
+		};
+
+		partition@0x00780000 {
+			label = "linux-kernel-recovery";
+			reg = <0x00780000 0x00500000>;
+			/* read-only; */
+		};
+
+		partition@0x00c80000 {
+			label = "rootfs-recovery";
+			reg = <0x00c80000 0x02000000>;
+		};
+
+		partition@0x02c80000 {
+			label = "mfg";
+			reg = <0x02c80000 0x00500000>;
+		};
+
+		partition@0x03180000 {
+			label = "config";
+			reg = <0x03180000 0x00a00000>;
+		};
+
+		partition@0x03b80000 {
+			label = "cache";
+			reg = <0x03b80000 0x01e00000>;
+		};
+
+		partition@0x05980000 {
+			label = "rootfs";
+			reg = <0x05980000 0x0a680000>;
+		};
+	};
+};
