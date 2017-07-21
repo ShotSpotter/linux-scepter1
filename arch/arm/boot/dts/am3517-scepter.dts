@@ -367,7 +367,7 @@
 		> ;
 	} ; 
 
-	mmc1_pins_idle: pinmux_cirq_pin {
+	mmc1_pins_idle: pinmux_mmc1_pins_idle {
 		pinctrl-single,pins = <
 			0x014a (PIN_INPUT_PULLUP | MUX_MODE4)	/* MMC1_DAT1 as GPIO4_27 */
 		> ;
@@ -399,7 +399,7 @@
 		> ;
 	} ;
 
-	mmc2_pins_idle: pinmux_cirq_pin {
+	mmc2_pins_idle: pinmux_mmc2_pins_idle {
 		pinctrl-single,pins = <
 			0x015e (PIN_INPUT_PULLUP | MUX_MODE4)	/* MMC2_DAT1 as GPIO5_5 */
 		> ;
