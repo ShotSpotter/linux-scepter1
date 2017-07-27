@@ -27,6 +27,41 @@
 		regulator-max-microvolt = <3300000>;
 	};
 	
+	
+   	leds {
+		pinctrl-names = "default";
+		pinctrl-0 = <&user_leds>;
+		compatible = "gpio-leds";
+
+		led@1 {
+			label = "led_blue";
+			gpios = <&gpio2 10 GPIO_ACTIVE_HIGH>; /* GPIO 42 */
+			default-state = "off";
+		};
+		led@2 {
+			label = "led_red";
+			gpios = <&gpio2 11 GPIO_ACTIVE_HIGH>; /* GPIO 43 */
+			default-state = "on";
+		};
+	};
+	
+	pps {
+		compatible = "pps-gpio";
+		source-name = "ublox_neo6m";
+		source-path = "/dev/ttyS3";
+		pinctrl-names = "default";
+		pinctrl-0 = <&gps_pins>;
+		gpios = <&gpio6 20 GPIO_ACTIVE_HIGH>; /* gpio 180 */
+	};
+
+	/* iio-hwmon {
+		compatible = "iio-hwmon";
+		io-channels = <&adc 0>, <&adc 1>, <&adc 2>,
+			<&adc 3>, <&adc 4>, <&adc 5>,
+			<&adc 6>, <&adc 7>, <&adc 8>,
+			<&adc 9>;
+	}; */
+	
 	clk_audio_fixed: clk_audio_fixed {
 		#clock-cells = <0>;
 		compatible = "fixed-clock";
@@ -57,8 +92,6 @@
 	};
 }; /* / */
 
-
-
 &am35x_otg_hs {
 	status = "okay";
 };
@@ -70,6 +103,14 @@
 &davinci_mdio {
 	status = "okay";
 };
+
+/* &mcspi1 {
+	adc: mcp3001@0 {
+		compatible = "microchip,mcp3001"
+		reg = <0x0>;
+		#io-channel-cells = <1>;
+	}
+}; */
 
 &i2c1 {
 	clock-frequency = <400000>;
@@ -263,20 +304,19 @@
 
 /* PPS */
 &mcbsp3 {
-	status = "okay";
+	/* We're using GPIO pps instead, so let's disable this */
+	status = "disabled";
 };
 
 &mmc1 {
 	status = "okay";
 	vmmc-supply = <&vmmc_fixed>;
-	/*pinctrl-names = "default", "idle", "sleep";*/
 	pinctrl-names = "default", "idle";
 	pinctrl-0 = <&mmc1_pins_default>;
 	pinctrl-1 = <&mmc1_pins_idle>;
-	/*pinctrl-2 = <&mmc1_pins_sleep>;*/
 	bus-width = <4>;
-		ti,non-removable;
-		disable-wp;
+	ti,non-removable;
+	disable-wp;
 	/* interrupts-extended = <&intc 64 &gpio2 28 GPIO_ACTIVE_LOW>;*/
 	/* interrupts-extended = <&intc 64 &gpio2 28 GPIO_ACTIVE_HIGH>; */
 	/* cd-gpios = <&gpio1 6 GPIO_ACTIVE_HIGH>;
@@ -286,14 +326,10 @@
 &mmc2 {
 	status = "okay";
 	vmmc-supply = <&vmmc_fixed>;
-	/*pinctrl-names = "default", "idle", "sleep";*/
 	pinctrl-names = "default", "idle";
 	pinctrl-0 = <&mmc2_pins_default>;
 	pinctrl-1 = <&mmc2_pins_idle>;
-	/*pinctrl-2 = <&mmc2_pins_sleep>;*/
 	bus-width = <4>;
-	ti,non-removable;
-	disable-wp;
 	/*interrupts-extended = <&intc 86 &gpio2 29 GPIO_ACTIVE_HIGH>;
 	cd-gpios = <&gpio1 6 GPIO_ACTIVE_HIGH>;
 	cd-inverted;*/
@@ -319,132 +355,438 @@
 	status = "okay";
 };
 
-/*&uart3 {
+&uart3 {
 	status = "okay";
-};*/
+}; 
 
 &uart4 {
 	status = "okay";
+	dma-names = "tx", "rx";
+	dmas = <&sdma 55 &sdma 56>; /* dmas in am3517.dtsi is wrong so we fix it here. kick upstream? */
 };
 
+/* 
+* TI's tools output offsets from 0x48002000. omap3.dtsi uses an offset of 0x48002030.
+* Make sure you've adjusted the offsets accordingly.
+*/
 &omap3_pmx_core {
 	pinctrl-names = "default";
-	nand_pins_default: pinmux_nand_pins {
+	nand_pins: nand_pins {
 		pinctrl-single,pins = <
-			0xBE ( PIN_OUTPUT | MUX_MODE0 ) /* gpmc_clk, NC*/
-			0x8E ( PIN_INPUT_PULLUP | MUX_MODE0 ) /* gpmc_d0, CPU_GPMC_D0*/
-			0x90 ( PIN_INPUT_PULLUP | MUX_MODE0 ) /* gpmc_d1, CPU_GPMC_D1*/
-			0x92 ( PIN_INPUT_PULLUP | MUX_MODE0 ) /* gpmc_d2, CPU_GPMC_D2*/
-			0x94 ( PIN_INPUT_PULLUP | MUX_MODE0 ) /* gpmc_d3, CPU_GPMC_D3*/
-			0x96 ( PIN_INPUT_PULLUP | MUX_MODE0 ) /* gpmc_d4, CPU_GPMC_D4*/
-			0x98 ( PIN_INPUT_PULLUP | MUX_MODE0 ) /* gpmc_d5, CPU_GPMC_D5*/
-			0x9A ( PIN_INPUT_PULLUP | MUX_MODE0 ) /* gpmc_d6, CPU_GPMC_D6*/
-			0x9C ( PIN_INPUT_PULLUP | MUX_MODE0 ) /* gpmc_d7, CPU_GPMC_D7*/
-			0x9E ( PIN_INPUT_PULLUP | MUX_MODE0 ) /* gpmc_d8, CPU_GPMC_D8*/
-			0xA0 ( PIN_INPUT_PULLUP | MUX_MODE0 ) /* gpmc_d9, CPU_GPMC_D9*/
-			0xA2 ( PIN_INPUT_PULLUP | MUX_MODE0 ) /* gpmc_d10, CPU_GPMC_D10*/
-			0xA4 ( PIN_INPUT_PULLUP | MUX_MODE0 ) /* gpmc_d11, CPU_GPMC_D11*/
-			0xA6 ( PIN_INPUT_PULLUP | MUX_MODE0 ) /* gpmc_d12, CPU_GPMC_D12*/
-			0xA8 ( PIN_INPUT_PULLUP | MUX_MODE0 ) /* gpmc_d13, CPU_GPMC_D13*/
-			0xAA ( PIN_INPUT_PULLUP | MUX_MODE0 ) /* gpmc_d14, CPU_GPMC_D14*/
-			0xAC ( PIN_INPUT_PULLUP | MUX_MODE0 ) /* gpmc_d15, CPU_GPMC_D15*/
-			0xC0 ( PIN_OUTPUT | MUX_MODE0 ) /* gpmc_nadv_ale, CPU_GPMC_NAVD_ALE*/
-			0xC6 ( PIN_OUTPUT_PULLUP | MUX_MODE0 ) /* gpmc_nbe0_cle, CPU_GPMC_NBE0_CLE*/
-			0xC8 ( PIN_INPUT_PULLUP | MUX_MODE7 ) /* safe_mode, NC*/
-			0xAE ( PIN_OUTPUT_PULLUP | MUX_MODE0 ) /* gpmc_ncs0, CPU_GPMC_NCS0*/
-			0xB0 ( PIN_INPUT_PULLUP | MUX_MODE7 ) /* safe_mode, NC*/
+			0x8E ( PIN_OUTPUT | MUX_MODE0 ) /* gpmc_clk, NC*/
+			0x5E ( PIN_INPUT_PULLUP | MUX_MODE0 ) /* gpmc_d0, CPU_GPMC_D0*/
+			0x60 ( PIN_INPUT_PULLUP | MUX_MODE0 ) /* gpmc_d1, CPU_GPMC_D1*/
+			0x62 ( PIN_INPUT_PULLUP | MUX_MODE0 ) /* gpmc_d2, CPU_GPMC_D2*/
+			0x64 ( PIN_INPUT_PULLUP | MUX_MODE0 ) /* gpmc_d3, CPU_GPMC_D3*/
+			0x66 ( PIN_INPUT_PULLUP | MUX_MODE0 ) /* gpmc_d4, CPU_GPMC_D4*/
+			0x68 ( PIN_INPUT_PULLUP | MUX_MODE0 ) /* gpmc_d5, CPU_GPMC_D5*/
+			0x6A ( PIN_INPUT_PULLUP | MUX_MODE0 ) /* gpmc_d6, CPU_GPMC_D6*/
+			0x6C ( PIN_INPUT_PULLUP | MUX_MODE0 ) /* gpmc_d7, CPU_GPMC_D7*/
+			0x6E ( PIN_INPUT_PULLUP | MUX_MODE0 ) /* gpmc_d8, CPU_GPMC_D8*/
+			0x70 ( PIN_INPUT_PULLUP | MUX_MODE0 ) /* gpmc_d9, CPU_GPMC_D9*/
+			0x72 ( PIN_INPUT_PULLUP | MUX_MODE0 ) /* gpmc_d10, CPU_GPMC_D10*/
+			0x74 ( PIN_INPUT_PULLUP | MUX_MODE0 ) /* gpmc_d11, CPU_GPMC_D11*/
+			0x76 ( PIN_INPUT_PULLUP | MUX_MODE0 ) /* gpmc_d12, CPU_GPMC_D12*/
+			0x78 ( PIN_INPUT_PULLUP | MUX_MODE0 ) /* gpmc_d13, CPU_GPMC_D13*/
+			0x7A ( PIN_INPUT_PULLUP | MUX_MODE0 ) /* gpmc_d14, CPU_GPMC_D14*/
+			0x7C ( PIN_INPUT_PULLUP | MUX_MODE0 ) /* gpmc_d15, CPU_GPMC_D15*/
+			0x90 ( PIN_OUTPUT | MUX_MODE0 ) /* gpmc_nadv_ale, CPU_GPMC_NAVD_ALE*/
+			0x96 ( PIN_OUTPUT_PULLUP | MUX_MODE0 ) /* gpmc_nbe0_cle, CPU_GPMC_NBE0_CLE*/
+			0x98 ( PIN_INPUT_PULLUP | MUX_MODE7 ) /* safe_mode, NC*/
+			0x7E ( PIN_OUTPUT_PULLUP | MUX_MODE0 ) /* gpmc_ncs0, CPU_GPMC_NCS0*/
+			0x80 ( PIN_INPUT_PULLUP | MUX_MODE7 ) /* safe_mode, NC*/
+			0x92 ( PIN_OUTPUT | MUX_MODE0 ) /* gpmc_noe, CPU_GPMC_NOE*/
+			0x94 ( PIN_OUTPUT | MUX_MODE0 ) /* gpmc_nwe, CPU_GPMC_NWE*/
+			0x9A ( PIN_OUTPUT | MUX_MODE0 ) /* gpmc_nwp, CPU_GPMC_NWP*/
+			0x9C ( PIN_INPUT_PULLUP | MUX_MODE0 ) /* gpmc_wait0, CPU_GPMC_WAIT0*/
 		> ;
 	} ;
 
 	mmc1_pins_default: pinmux_mmc1_pins {
 		pinctrl-single,pins = <
-			0x144 ( PIN_INPUT_PULLUP | MUX_MODE0 ) /* mmc1_clk, CPU_MMC1_CLK*/
-			0x146 ( INPUT_EN | PULL_UP | MUX_MODE0 ) /* mmc1_cmd, CPU_MMC1_CMD*/
-			0x148 ( INPUT_EN | PULL_UP | MUX_MODE0 ) /* mmc1_dat0, CPU_MMC1_DAT0*/
-			0x14A ( INPUT_EN | PULL_UP | MUX_MODE0 ) /* mmc1_dat1, CPU_MMC1_DAT1*/
-			0x14C ( INPUT_EN | PULL_UP | MUX_MODE0 ) /* mmc1_dat2, CPU_MMC1_DAT2*/
-			0x14E ( INPUT_EN | PULL_UP | MUX_MODE0 ) /* mmc1_dat3, CPU_MMC1_DAT3*/
+			0x114 ( PIN_INPUT_PULLUP | MUX_MODE0 ) /* mmc1_clk, CPU_MMC1_CLK*/
+			0x116 ( INPUT_EN | PULL_UP | MUX_MODE0 ) /* mmc1_cmd, CPU_MMC1_CMD*/
+			0x118 ( INPUT_EN | PULL_UP | MUX_MODE0 ) /* mmc1_dat0, CPU_MMC1_DAT0*/
+			0x11A ( INPUT_EN | PULL_UP | MUX_MODE0 ) /* mmc1_dat1, CPU_MMC1_DAT1*/
+			0x11C ( INPUT_EN | PULL_UP | MUX_MODE0 ) /* mmc1_dat2, CPU_MMC1_DAT2*/
+			0x11E ( INPUT_EN | PULL_UP | MUX_MODE0 ) /* mmc1_dat3, CPU_MMC1_DAT3*/
+			0x1BE ( PIN_INPUT_PULLUP | MUX_MODE4 ) /* gpio_99, SD_CARD1_DET*/
 		> ;
 	} ; 
 
 	mmc1_pins_idle: pinmux_mmc1_pins_idle {
 		pinctrl-single,pins = <
-			0x014a (PIN_INPUT_PULLUP | MUX_MODE4)	/* MMC1_DAT1 as GPIO4_27 */
+			0x11A ( INPUT_EN | PULL_UP | MUX_MODE0 ) /* mmc1_dat1, CPU_MMC1_DAT1*/
 		> ;
 	};
 
 	mmc1_pins_sleep: pinmux_mmc1_pins_sleep {
 		pinctrl-single,pins = <
-			0x144 ( PIN_INPUT_PULLUP | MUX_MODE0 ) /* mmc1_clk, CPU_MMC1_CLK*/
-			0x146 ( INPUT_EN | PULL_UP | MUX_MODE0 ) /* mmc1_cmd, CPU_MMC1_CMD*/
-			0x148 ( INPUT_EN | PULL_UP | MUX_MODE0 ) /* mmc1_dat0, CPU_MMC1_DAT0*/
-			0x14A ( INPUT_EN | PULL_UP | MUX_MODE0 ) /* mmc1_dat1, CPU_MMC1_DAT1*/
-			0x14C ( INPUT_EN | PULL_UP | MUX_MODE0 ) /* mmc1_dat2, CPU_MMC1_DAT2*/
-			0x14E ( INPUT_EN | PULL_UP | MUX_MODE0 ) /* mmc1_dat3, CPU_MMC1_DAT3*/
+			0x114 ( PIN_INPUT_PULLUP | MUX_MODE0 ) /* mmc1_clk, CPU_MMC1_CLK*/
+			0x116 ( INPUT_EN | PULL_UP | MUX_MODE0 ) /* mmc1_cmd, CPU_MMC1_CMD*/
+			0x118 ( INPUT_EN | PULL_UP | MUX_MODE0 ) /* mmc1_dat0, CPU_MMC1_DAT0*/
+			0x11A ( INPUT_EN | PULL_UP | MUX_MODE0 ) /* mmc1_dat1, CPU_MMC1_DAT1*/
+			0x11C ( INPUT_EN | PULL_UP | MUX_MODE0 ) /* mmc1_dat2, CPU_MMC1_DAT2*/
+			0x11E ( INPUT_EN | PULL_UP | MUX_MODE0 ) /* mmc1_dat3, CPU_MMC1_DAT3*/
+			0x1BE ( PIN_INPUT_PULLUP | MUX_MODE4 ) /* gpio_99, SD_CARD1_DET*/
 		> ;
 	} ;
 
 	mmc2_pins_default: pinmux_mmc2_pins_default {
 		pinctrl-single,pins = <
-			0x158 ( PIN_INPUT_PULLUP | MUX_MODE0 ) /* mmc2_clk, CPU_MMC2_CLK*/
-			0x15A ( PIN_INPUT_PULLUP | MUX_MODE0 ) /* mmc2_cmd, CPU_MMC2_CMD*/
-			0x15C ( PIN_INPUT_PULLUP | MUX_MODE0 ) /* mmc2_dat0, CPU_MMC2_DAT0*/
-			0x15E ( PIN_INPUT_PULLUP | MUX_MODE0 ) /* mmc2_dat1, CPU_MMC2_DAT1*/
-			0x160 ( PIN_INPUT_PULLUP | MUX_MODE0 ) /* mmc2_dat2, CPU_MMC2_DAT2*/
-			0x162 ( PIN_INPUT_PULLUP | MUX_MODE0 ) /* mmc2_dat3, CPU_MMC2_DAT3*/
-			0x164 ( PIN_INPUT_PULLDOWN | MUX_MODE1 ) /* HY-DBG: MMC2_DIR_DAT0 gpio_136, BD_REV2*/
-			0x166 ( PIN_INPUT_PULLDOWN | MUX_MODE1 ) /* HY-DBG: MMC2_DIR_DAT1 gpio_137, BD_REV3*/
-			/*	 0x168 ( PIN_INPUT_PULLDOWN | MUX_MODE1 ) /* HY-DBG: MMC2_DIR_CMD gpio_137, BD_REV3*/
-			/*	 0x170 ( PIN_INPUT_PULLDOWN | MUX_MODE1 ) /* HY-DBG: MMC2_CLKIN gpio_137, BD_REV3*/
+			0x126 ( PIN_INPUT_PULLDOWN | MUX_MODE4 ) /* gpio_129, INTR_CARD_DET*/
+			0x128 ( PIN_INPUT_PULLUP | MUX_MODE0 ) /* mmc2_clk, CPU_MMC2_CLK*/
+			0x12A ( PIN_INPUT_PULLUP | MUX_MODE0 ) /* mmc2_cmd, CPU_MMC2_CMD*/
+			0x12C ( PIN_INPUT_PULLUP | MUX_MODE0 ) /* mmc2_dat0, CPU_MMC2_DAT0*/
+			0x12E ( PIN_INPUT_PULLUP | MUX_MODE0 ) /* mmc2_dat1, CPU_MMC2_DAT1*/
+			0x130 ( PIN_INPUT_PULLUP | MUX_MODE0 ) /* mmc2_dat2, CPU_MMC2_DAT2*/
+			0x132 ( PIN_INPUT_PULLUP | MUX_MODE0 ) /* mmc2_dat3, CPU_MMC2_DAT3*/
+			0x134 ( PIN_INPUT_PULLDOWN | MUX_MODE1 ) /* HY-DBG: MMC2_DIR_DAT0 gpio_136, BD_REV2*/
+			0x136 ( PIN_INPUT_PULLDOWN | MUX_MODE1 ) /* HY-DBG: MMC2_DIR_DAT1 gpio_137, BD_REV3*/
+			0x13A ( PIN_INPUT_PULLUP | MUX_MODE1 ) /* mmc2_clkin, MMC2_CLKIN*/
+			/*	 0x138 ( PIN_INPUT_PULLUP | MUX_MODE1 ) /* HY-DBG: MMC2_DIR_CMD gpio_138, SD_CARD2_DET*/
+			/*	 0x140 ( PIN_INPUT | MUX_MODE0 ) /* mcbsp3_clkx, ADC_BCLK1*/
 		> ;
 	} ;
 
 	mmc2_pins_idle: pinmux_mmc2_pins_idle {
 		pinctrl-single,pins = <
-			0x015e (PIN_INPUT_PULLUP | MUX_MODE4)	/* MMC2_DAT1 as GPIO5_5 */
+			0x12E ( PIN_INPUT_PULLUP | MUX_MODE0 ) /* mmc2_dat1, CPU_MMC2_DAT1*/
 		> ;
 	};
 
 	mmc2_pins_sleep: pinmux_mmc2_pins_sleep {
 		pinctrl-single,pins = <
-			0x158 ( PIN_INPUT_PULLUP | MUX_MODE0 ) /* mmc2_clk, CPU_MMC2_CLK*/
-			0x15A ( PIN_INPUT_PULLUP | MUX_MODE0 ) /* mmc2_cmd, CPU_MMC2_CMD*/
-			0x15C ( PIN_INPUT_PULLUP | MUX_MODE0 ) /* mmc2_dat0, CPU_MMC2_DAT0*/
-			0x15E ( PIN_INPUT_PULLUP | MUX_MODE0 ) /* mmc2_dat1, CPU_MMC2_DAT1*/
-			0x160 ( PIN_INPUT_PULLUP | MUX_MODE0 ) /* mmc2_dat2, CPU_MMC2_DAT2*/
-			0x162 ( PIN_INPUT_PULLUP | MUX_MODE0 ) /* mmc2_dat3, CPU_MMC2_DAT3*/
-			0x164 ( PIN_INPUT_PULLDOWN | MUX_MODE1 ) /* HY-DBG: MMC2_DIR_DAT0 gpio_136, BD_REV2*/
-			0x166 ( PIN_INPUT_PULLDOWN | MUX_MODE1 ) /* HY-DBG: MMC2_DIR_DAT1 gpio_137, BD_REV3*/
+			0x126 ( PIN_INPUT_PULLDOWN | MUX_MODE4 ) /* gpio_129, INTR_CARD_DET*/
+			0x128 ( PIN_INPUT_PULLUP | MUX_MODE0 ) /* mmc2_clk, CPU_MMC2_CLK*/
+			0x12A ( PIN_INPUT_PULLUP | MUX_MODE0 ) /* mmc2_cmd, CPU_MMC2_CMD*/
+			0x12C ( PIN_INPUT_PULLUP | MUX_MODE0 ) /* mmc2_dat0, CPU_MMC2_DAT0*/
+			0x12E ( PIN_INPUT_PULLUP | MUX_MODE0 ) /* mmc2_dat1, CPU_MMC2_DAT1*/
+			0x130 ( PIN_INPUT_PULLUP | MUX_MODE0 ) /* mmc2_dat2, CPU_MMC2_DAT2*/
+			0x132 ( PIN_INPUT_PULLUP | MUX_MODE0 ) /* mmc2_dat3, CPU_MMC2_DAT3*/
+			0x134 ( PIN_INPUT_PULLDOWN | MUX_MODE1 ) /* HY-DBG: MMC2_DIR_DAT0 gpio_136, BD_REV2*/
+			0x136 ( PIN_INPUT_PULLDOWN | MUX_MODE1 ) /* HY-DBG: MMC2_DIR_DAT1 gpio_137, BD_REV3*/
+			0x13A ( PIN_INPUT_PULLUP | MUX_MODE1 ) /* mmc2_clkin, MMC2_CLKIN*/
 		> ;
 	} ;
 
 	/* wm8737 control */
 	wm8737_pins_default: wm8737_pins_default {
-			pinctrl-single,pins = <
-				0x1bc ( PIN_INPUT_PULLUP | MUX_MODE0 ) /* I2C2_SCL.I2C2_SCL */
-				0x1c0 ( PIN_INPUT_PULLUP | MUX_MODE0 ) /* I2C2_SDA.I2C2_SDA */
-			>;
+		pinctrl-single,pins = <
+			0x18E ( PIN_INPUT_PULLUP | MUX_MODE0 ) /* i2c2_scl, CPU_I2C2_SCL*/
+			0x190 ( PIN_INPUT_PULLUP | MUX_MODE0 ) /* i2c2_sda, CPU_I2C2_SDA*/
+		>;
 	};
 
 	/* Master ADC0 */
 	mcbsp1_pins: pinmux_mcbsp1_pins {
 		pinctrl-single,pins = <
-			OMAP3_CORE1_IOPAD(0x218c, PIN_INPUT | MUX_MODE0)	/* mcbsp1_clkr.mcbsp1_clkr */
-			OMAP3_CORE1_IOPAD(0x218e, PIN_INPUT | MUX_MODE0)	/* mcbsp1_fsr.mcbsp1_fsr */
-			OMAP3_CORE1_IOPAD(0x2192, PIN_INPUT | MUX_MODE0)	/* mcbsp1_dr.mcbsp1_dr */
-			OMAP3_CORE1_IOPAD(0x2194, PIN_INPUT | MUX_MODE0)	/* mcbsp1_clks.mcbsp1_clks */
+			0x15C ( PIN_INPUT | MUX_MODE0 ) /* mcbsp1_clkr, ADC_BCLK_1*/
+			0x15E ( PIN_INPUT_PULLUP | MUX_MODE0 ) /* mcbsp1_fsr, FRAME_SYNC*/
+			0x162 ( PIN_INPUT | MUX_MODE0 ) /* mcbsp1_dr, ADCDAT_L*/
+			0x164 ( PIN_INPUT | MUX_MODE0 ) /* mcbsp_clks, ADC_MCLK*/
 		>;
 	};
 
 	/* Slave ADC1 */
 	mcbsp2_pins: pinmux_mcbsp2_pins {
 		pinctrl-single,pins = <
-			OMAP3_CORE1_IOPAD(0x213c, PIN_INPUT | MUX_MODE0)	   /* mcbsp2_fsx.mcbsp2_fsx */
-			OMAP3_CORE1_IOPAD(0x213e, PIN_INPUT | MUX_MODE0)	   /* mcbsp2_clkx.mcbsp2_clkx */
-			OMAP3_CORE1_IOPAD(0x2140, PIN_INPUT | MUX_MODE0)	   /* mcbsp2_dr.mcbsp2_dr */
+			0x10C ( PIN_INPUT | MUX_MODE0 ) /* mcbsp2_fsx, FRAME_SYNC*/
+			0x10E ( PIN_INPUT | MUX_MODE0 ) /* mcbsp2_clkx, ADC_BCLK_1*/
+			0x110 ( PIN_INPUT | MUX_MODE0 ) /* mcbsp2_dr, ADCDAT_R*/
 		>;
 	};
-
+	
+	/* Pins associated with the GPS */
+	gps_pins: gps_pins {
+		pinctrl-single,pins = <
+			0x13E ( PIN_INPUT | MUX_MODE0 ) /* mcbsp3_dr, GPS_1PPS*/
+			0x1AA ( PIN_INPUT | MUX_MODE4 ) /* gpt10_pwm_evt, GPS_1PPS*/
+			0x1B6 ( PIN_OUTPUT | MUX_MODE2 ) /* uart4_tx, GPS_RXD*/
+			0x1BC ( PIN_INPUT | MUX_MODE2 ) /* uart4_rx, GPS_TXD*/
+			0x4A ( PIN_OUTPUT | MUX_MODE4 ) /* gpio_34, GPS_PWRON*/
+			0x4C ( PIN_OUTPUT | MUX_MODE4 ) /* gpio_35, GPS_RST*/
+		>;
+	};
+	
+	/* User LEDs */
+	user_leds: user_leds {
+		pinctrl-single,pins = <
+			0x5A ( PIN_OUTPUT | MUX_MODE4 ) /* gpio_42, CPU_LED_1*/
+			0x5C ( PIN_OUTPUT | MUX_MODE4 ) /* gpio_43, CPU_LED_2*/
+		>;
+	};
+	
+	/* Serial console */
+	uart3_pins: pinmux_uart3_pins {
+		pinctrl-single,pins = <
+			0x16A ( PIN_INPUT | MUX_MODE0 ) /* uart3_cts_rctx, CPU_UART3_CTS */
+			0x16C ( PIN_OUTPUT | MUX_MODE0 ) /* uart3_rts_sd, CPU_UART3_RTS */
+			0x16E ( PIN_INPUT | MUX_MODE0 ) /* uart3_rx_irrx, CPU_UART3_RX */
+			0x170 ( PIN_OUTPUT | MUX_MODE0 ) /* uart3_tx_irtx, CPU_UART3_TX */
+		>;
+	};
+	
+	/* Pins associated with the cellular radio */
+	cell_radio_default: pinmux_cell_radio {
+		pinctrl-single,pins = <
+			0x148 ( PIN_OUTPUT | MUX_MODE0 ) /* uart2_tx, GSM_RX1_CPU */
+			0x14A ( PIN_INPUT | MUX_MODE0 ) /* uart2_rx, GSM_TX1_CPU */
+			0x14C ( PIN_OUTPUT | MUX_MODE0 ) /* uart1_tx, GSM_RX0_CPU */
+			0x152 ( PIN_INPUT | MUX_MODE0 ) /* uart1_rx, GSM_TX0_CPU */
+			0x9E ( PIN_INPUT_PULLDOWN | MUX_MODE4 ) /* gpio_63, GSM_TXON*/
+			0xA0 ( PIN_INPUT_PULLDOWN | MUX_MODE4 ) /* gpio_64, GSM_HWR*/
+			0x82 ( PIN_OUTPUT | MUX_MODE4 ) /* gpio_53, GSM_WDIS*/
+			0x84 ( PIN_OUTPUT | MUX_MODE4 ) /* gpio_54, GSM_3304_ON*/
+			0x86 ( PIN_OUTPUT | MUX_MODE4 ) /* gpio_55, GSM_PWRON*/
+			0x5AC ( PIN_INPUT_PULLDOWN | MUX_MODE5 ) /* mm_fsusb1_rxrcv, CPU_MM_FSUSB1_RXRCV*/
+			0x5AE ( PIN_INPUT | MUX_MODE5 ) /* mm_fsusb1_txse0, CPU_MM_FSUSB1_TXSE0*/
+			0x5B0 ( PIN_INPUT_PULLDOWN | MUX_MODE5 ) /* mm_fsusb1_txdat, CPU_MM_FSUSB1_TXDAT*/
+			0x5BA ( PIN_INPUT | MUX_MODE5 ) /* mm_fsusb1_txen_n, CPU_MM_FSUSB1_TXEN_N*/
+		>;
+	};
+	
+	/* Ethernet */
+	ethernet_pins: pinmux_ethernet_pins {
+		pinctrl-single,pins = <
+			0x4E ( PIN_OUTPUT | MUX_MODE4 ) /* gpio_36, RELAY*/
+			0x8C ( PIN_INPUT_PULLDOWN | MUX_MODE4 ) /* gpio_58, ETHERNET_IRQ_N*/
+			0xA2 ( PIN_OUTPUT | MUX_MODE4 ) /* gpio_65, CPU_ETHERNET_RST_N*/
+			0x1CC ( PIN_OUTPUT | MUX_MODE4 ) /* gpio_106, CPU_ENABLE_ADC_CLK*/
+			0x1CE ( PIN_INPUT | MUX_MODE0 ) /* rmii_mdio_data, CPU_RMII_MDIO_DATA*/
+			0x1D0 ( PIN_OUTPUT | MUX_MODE0 ) /* rmii_mdio_clk, CPU_RMII_MDIO_CLK*/
+			0x1D2 ( PIN_INPUT | MUX_MODE0 ) /* rmii_rxd0, CPU_RMII_RXD0*/
+			0x1D4 ( PIN_INPUT | MUX_MODE0 ) /* rmii_rxd1, CPU_RMII_RXD1*/
+			0x1D6 ( PIN_INPUT | MUX_MODE0 ) /* rmii_crs_dv, CPU_RMII_CRS_DV*/
+			0x1D8 ( PIN_OUTPUT | MUX_MODE0 ) /* rmii_rxer, CPU_RMII_RXER*/
+			0x1DA ( PIN_OUTPUT | MUX_MODE0 ) /* rmii_txd0, CPU_RMII_TXD0*/
+			0x1DC ( PIN_OUTPUT | MUX_MODE0 ) /* rmii_txd1, CPU_RMII_TXD1*/
+			0x1DE ( PIN_OUTPUT | MUX_MODE0 ) /* rmii_txen, CPU_RMII_TXEN*/
+			0x1E0 ( PIN_INPUT_PULLDOWN | MUX_MODE0 ) /* rmii_50mhz_clk, RMII_50MHZ_CLK*/
+			0x1E2 ( PIN_OUTPUT_PULLDOWN | MUX_MODE0 ) /* usb0_drvvbus, CPU_USB0_DRVVBUS */
+		>;
+	};
+	
+	/* PMIC */
+	pmic_pins: pinmux_pmic_pins {
+		pinctrl-single,pins = <
+			0x9D4 ( PIN_INPUT | MUX_MODE0 ) /* sys_32k, CPU_CLK32K*/
+			0x9D6 ( PIN_INPUT | MUX_MODE4 ) /* gpio_1, SLEEP */
+			0x18A ( PIN_INPUT_PULLUP | MUX_MODE0 ) /* i2c1_scl, CPU_I2C1_SCL*/
+			0x18C ( PIN_INPUT_PULLUP | MUX_MODE0 ) /* i2c1_sda, CPU_I2C1_SDA*/
+		>;
+	};
+		
+	/* CPLD watchdog */
+	cpld_pins: pinmux_cpld_pins {
+		pinctrl-single,pins = <
+			0xA6 ( PIN_INPUT_PULLDOWN | MUX_MODE4 ) /* gpio_67, CPLD_REV0*/
+			0xA8 ( PIN_INPUT_PULLDOWN | MUX_MODE4 ) /* gpio_68, CPLD_REV1*/
+			0xAA ( PIN_INPUT_PULLUP | MUX_MODE4 ) /* gpio_69, CPLD_REV2*/
+			0xBE ( PIN_INPUT_PULLUP | MUX_MODE4 ) /* gpio_79, SHTDWN_FLAG*/
+			0xB8 ( PIN_INPUT_PULLUP | MUX_MODE4 ) /* gpio_76, CPLD_HEARTBEAT*/
+			0xA4 ( PIN_INPUT_PULLUP | MUX_MODE4 ) /* gpio_66, CPU_FORCE_SHTDWN*/
+		>;
+	};
+	
+	/* sdrc */
+	sdrc_pins: pinmux_sdrc_pins {
+		pinctrl-single,pins = <
+			0x1EA ( PIN_INPUT_PULLDOWN | MUX_MODE0 ) /* sdrc_dqs0n, GND*/
+			0x1EC ( PIN_INPUT_PULLDOWN | MUX_MODE0 ) /* sdrc_dqs1n, GND*/
+			0x1EE ( PIN_INPUT_PULLDOWN | MUX_MODE0 ) /* sdrc_dqs2n, GND*/
+			0x1F0 ( PIN_INPUT_PULLDOWN | MUX_MODE0 ) /* sdrc_dqs3n, GND*/
+			0x1F2 ( PIN_INPUT | MUX_MODE0 ) /* sdrc_strben_dly0, NC*/
+			0x1F4 ( PIN_INPUT | MUX_MODE0 ) /* sdrc_strben_dly1, NC*/
+			0x236 ( PIN_OUTPUT | MUX_MODE0 ) /* sdrc_cke0, CPU_DSRC_SKE0*/
+			0x00 ( PIN_INPUT | MUX_MODE0 ) /* sdrc_d0, CPU_SDRC_D0*/
+			0x02 ( PIN_INPUT | MUX_MODE0 ) /* sdrc_d1, CPU_SDRC_D1*/
+			0x04 ( PIN_INPUT | MUX_MODE0 ) /* sdrc_d2, CPU_SDRC_D2*/
+			0x06 ( PIN_INPUT | MUX_MODE0 ) /* sdrc_d3, CPU_SDRC_D3*/
+			0x08 ( PIN_INPUT | MUX_MODE0 ) /* sdrc_d4, CPU_SDRC_D4*/
+			0x0A ( PIN_INPUT | MUX_MODE0 ) /* sdrc_d5, CPU_SDRC_D5*/
+			0x0C ( PIN_INPUT | MUX_MODE0 ) /* sdrc_d6, CPU_SDRC_D6*/
+			0x0E ( PIN_INPUT | MUX_MODE0 ) /* sdrc_d7, CPU_SDRC_D7*/
+			0x10 ( PIN_INPUT | MUX_MODE0 ) /* sdrc_d8, CPU_SDRC_D8*/
+			0x12 ( PIN_INPUT | MUX_MODE0 ) /* sdrc_d9, CPU_SDRC_D9*/
+			0x14 ( PIN_INPUT | MUX_MODE0 ) /* sdrc_d10, CPU_SDRC_D10*/
+			0x16 ( PIN_INPUT | MUX_MODE0 ) /* sdrc_d11, CPU_SDRC_D11*/
+			0x18 ( PIN_INPUT | MUX_MODE0 ) /* sdrc_d12, CPU_SDRC_D12*/
+			0x1A ( PIN_INPUT | MUX_MODE0 ) /* sdrc_d13, CPU_SDRC_D13*/
+			0x1C ( PIN_INPUT | MUX_MODE0 ) /* sdrc_d14, CPU_SDRC_D14*/
+			0x1E ( PIN_INPUT | MUX_MODE0 ) /* sdrc_d15, CPU_SDRC_D15*/
+			0x20 ( PIN_INPUT | MUX_MODE0 ) /* sdrc_d16, CPU_SDRC_D16*/
+			0x22 ( PIN_INPUT | MUX_MODE0 ) /* sdrc_d17, CPU_SDRC_D17*/
+			0x24 ( PIN_INPUT | MUX_MODE0 ) /* sdrc_d18, CPU_SDRC_D18*/
+			0x26 ( PIN_INPUT | MUX_MODE0 ) /* sdrc_d19, CPU_SDRC_D19*/
+			0x28 ( PIN_INPUT | MUX_MODE0 ) /* sdrc_d20, CPU_SDRC_D20*/
+			0x2A ( PIN_INPUT | MUX_MODE0 ) /* sdrc_d21, CPU_SDRC_D21*/
+			0x2C ( PIN_INPUT | MUX_MODE0 ) /* sdrc_d22, CPU_SDRC_D22*/
+			0x2E ( PIN_INPUT | MUX_MODE0 ) /* sdrc_d23, CPU_SDRC_D23*/
+			0x30 ( PIN_INPUT | MUX_MODE0 ) /* sdrc_d24, CPU_SDRC_D24*/
+			0x32 ( PIN_INPUT | MUX_MODE0 ) /* sdrc_d25, CPU_SDRC_D25*/
+			0x34 ( PIN_INPUT | MUX_MODE0 ) /* sdrc_d26, CPU_SDRC_D26*/
+			0x36 ( PIN_INPUT | MUX_MODE0 ) /* sdrc_d27, CPU_SDRC_D27*/
+			0x38 ( PIN_INPUT | MUX_MODE0 ) /* sdrc_d28, CPU_SDRC_D28*/
+			0x3A ( PIN_INPUT | MUX_MODE0 ) /* sdrc_d29, CPU_SDRC_D29*/
+			0x3C ( PIN_INPUT | MUX_MODE0 ) /* sdrc_d30, CPU_SDRC_D30*/
+			0x3E ( PIN_INPUT | MUX_MODE0 ) /* sdrc_d31, CPU_SDRC_D31*/
+			0x40 ( PIN_INPUT | MUX_MODE0 ) /* sdrc_clk, CPU_SDRC_CLK*/
+			0x42 ( PIN_INPUT | MUX_MODE0 ) /* sdrc_dqs0p, CPU_SDRC_DQS0*/
+			0x44 ( PIN_INPUT | MUX_MODE0 ) /* sdrc_dqs1p, CPU_SDRC_DQS1*/
+			0x46 ( PIN_INPUT | MUX_MODE0 ) /* sdrc_dqs2p, CPU_SDRC_DQS2*/
+			0x48 ( PIN_INPUT | MUX_MODE0 ) /* sdrc_dqs3p, CPU_SDRC_DQS3*/
+		>;
+	};
+	
+	/* hwmon */
+	hwmon_pins: pinmux_hwmon {
+		pinctrl-single,pins = <
+			0x198 ( PIN_INPUT | MUX_MODE0 ) /* mcspi1_clk, CPU_MCSPI1_CLK*/
+			0x19A ( PIN_INPUT | MUX_MODE0 ) /* mcspi1_simo, TP28_SPI1_SIMO*/
+			0x19C ( PIN_INPUT | MUX_MODE0 ) /* mcspi1_somi, CPU_MCSPI1_SOMI*/
+			0x19E ( PIN_INPUT_PULLDOWN | MUX_MODE0 ) /* mcspi1_cs0, CPU_MCSPI_CS0*/
+			0x1C2 ( PIN_OUTPUT | MUX_MODE4 ) /* gpio_101, CPU_AMUX_INHB*/
+			0x1C4 ( PIN_OUTPUT | MUX_MODE4 ) /* gpio_102, CPU_AMUX_A0*/
+			0x1C6 ( PIN_OUTPUT | MUX_MODE4 ) /* gpio_103, CPU_AMUX_A1*/
+			0x1C8 ( PIN_OUTPUT | MUX_MODE4 ) /* gpio_104, CPU_AMUX_A2*/
+			0x1CA ( PIN_OUTPUT | MUX_MODE4 ) /* gpio_105, CPU_AMUX_A3*/
+			0xB0 ( PIN_OUTPUT | MUX_MODE4 ) /* gpio_72, CPU_AMUX_A4*/
+		>;
+	};
+	
+	/* Heaters */
+	heaters: pinmux_heaters {
+		pinctrl-single,pins = <
+			0x50 ( PIN_INPUT_PULLDOWN | MUX_MODE4 ) /* gpio_37, HEAT_3304*/
+			0xAC ( PIN_INPUT_PULLDOWN | MUX_MODE4 ) /* gpio_70, CPU_ADC_HEAT_LFT*/
+			0xAE ( PIN_INPUT_PULLDOWN | MUX_MODE4 ) /* gpio_71, CPU_ADC_HEAT_RGT*/
+		>;
+	};
+	
+	/* Board rev fuses */
+	board_rev_pins: pinmux_board_rev {
+		pinctrl-single,pins = <
+			0x120 ( PIN_INPUT_PULLDOWN | MUX_MODE4 ) /* gpio_126, BD_REV0*/
+			0x122 ( PIN_INPUT_PULLDOWN | MUX_MODE4 ) /* gpio_127, BD_REV1*/
+			0xD0 ( PIN_INPUT | MUX_MODE4 ) /* gpio_88, BD_REV2*/
+			0xD2 ( PIN_INPUT | MUX_MODE4 ) /* gpio_89, BD_REV3*/
+		>;
+	};
+	
+	/* JTAG */
+	jtag: pinmux_jtag {
+		pinctrl-single,pins = <
+			0x9EE ( PIN_INPUT | MUX_MODE0 ) /* jtag_tck, CPU_JTAG_TCK*/
+			0x9F0 ( PIN_INPUT | MUX_MODE0 ) /* jtag_tms_tmsc, CPU_JTAG_TMS_TMSC*/
+			0x9F2 ( PIN_INPUT | MUX_MODE0 ) /* jtag_tdi, CPU_JTAG_TDI*/
+			0x9F4 ( PIN_INPUT | MUX_MODE0 ) /* jtag_emu0, CPU_JTAG_EMU0*/
+			0x9F6 ( PIN_INPUT | MUX_MODE0 ) /* jtag_emu1, CPU_JTAG_EMU1*/
+		>;
+	};
+	
+	/* sysboot pins */
+	sysboot: pinmux_sysboot {
+		pinctrl-single,pins = <
+			0x9DA ( PIN_INPUT | MUX_MODE0 ) /* sys_boot0, CPU_SYS_BOOT0*/
+			0x9DC ( PIN_INPUT | MUX_MODE0 ) /* sys_boot1, CPU_SYS_BOOT1*/
+			0x9DE ( PIN_INPUT | MUX_MODE0 ) /* sys_boot2, CPU_SYS_BOOT2*/
+			0x9E0 ( PIN_INPUT | MUX_MODE0 ) /* sys_boot3, CPU_SYS_BOOT3 */
+			0x9E2 ( PIN_INPUT | MUX_MODE0 ) /* sys_boot4, CPU_SYS_BOOT4 */
+			0x9E4 ( PIN_INPUT | MUX_MODE0 ) /* sys_boot5, CPU_SYS_BOOT5 */
+			0x9E6 ( PIN_INPUT | MUX_MODE0 ) /* sys_boot6, CPU_SYS_BOOT6 */
+			0x1E8 ( PIN_INPUT | MUX_MODE0 ) /* sys_boot7, CPU_SYS_BOOT7 */
+			0x1F6 ( PIN_INPUT | MUX_MODE0 ) /* sys_boot8, CPU_SYS_BOOT8 */
+		>;
+	};
+	
+	/* Grab bag */
+	grabbag_pins: pinmux_grabbag {
+		pinctrl-single,pins = <	
+			0x52 ( PIN_INPUT_PULLUP | MUX_MODE4 ) /* gpio_38, 3810_POWER_GOOD*/
+			0x54 ( PIN_INPUT_PULLDOWN | MUX_MODE4 ) /* gpio_39, 4356_LOW_VOLTAGE*/
+			0x56 ( PIN_INPUT_PULLDOWN | MUX_MODE4 ) /* gpio_40, 4356_FAULT*/
+			0x88 ( PIN_OUTPUT | MUX_MODE4 ) /* gpio_56, 1V8AR_PWRON*/
+			0xD6 ( PIN_OUTPUT | MUX_MODE4 ) /* gpio_91, CPU_TP0*/
+			0xD8 ( PIN_OUTPUT | MUX_MODE4 ) /* gpio_92, CPU_TP1*/
+			0xDA ( PIN_OUTPUT | MUX_MODE4 ) /* gpio_93, CPU_TP2*/
+			0x124 ( PIN_OUTPUT | MUX_MODE4 ) /* gpio_128, CPU_PWRON_ADC*/
+			0x9D8 ( PIN_INPUT | MUX_MODE0 ) /* sys_nreswarm, WARM_NRST */
+			0x140 ( PIN_INPUT | MUX_MODE0 ) /* mcbsp3_clkx, ADC_BCLK1*/
+			0x142 ( PIN_INPUT | MUX_MODE0 ) /* mcbsp3_fsx, FRAME_SYNC*/
+			0x1AC ( PIN_INPUT_PULLDOWN | MUX_MODE7 ) /* gpt11_pwm_evt, FRAME_SYNC_8192*/
+			0x1B0 ( PIN_INPUT_PULLUP | MUX_MODE0 ) /* sys_nirq, NIRQ */
+			0x1C0 ( INPUT_EN | PULL_UP | MUX_MODE4 ) /* gpio_100, 4356_GOOD*/
+			0x4E ( PIN_OUTPUT | MUX_MODE4 ) /* gpio_36, RELAY*/
+			0x8C ( PIN_INPUT_PULLDOWN | MUX_MODE4 ) /* gpio_58, ETHERNET_IRQ_N*/
+			0xB4 ( PIN_OUTPUT | MUX_MODE4 ) /* gpio_74, CPU_USB_SPEED*/
+			0xB6 ( PIN_OUTPUT | MUX_MODE4 ) /* gpio_75, CPU_SOFTCON*/
+			0xBC ( PIN_OUTPUT | MUX_MODE4 ) /* gpio_78, CPU_TP3*/
+			0xC0 ( PIN_INPUT_PULLUP | MUX_MODE4 ) /* gpio_80, SW0*/
+			0xC2 ( PIN_INPUT_PULLUP | MUX_MODE4 ) /* gpio_81, SW1*/
+			0xC8 ( PIN_OUTPUT | MUX_MODE4 ) /* gpio_84, CPU_CNTR_RST*/
+		>;
+	};
+	
+	/* Non-connected pins */
+	not_connected: pinmux_nc_pins {
+		pinctrl-single,pins = <
+			0x58 ( PIN_INPUT_PULLUP | MUX_MODE7 ) /* safe_mode, NC*/
+			0x8A ( PIN_INPUT | MUX_MODE7 ) /* safe_mode, NC*/
+			0xB2 ( PIN_INPUT | MUX_MODE7 ) /* safe_mode, NC*/
+			0xC4 ( PIN_INPUT_PULLUP | MUX_MODE7 ) /* gpio_82, NC*/
+			0xC6 ( PIN_INPUT_PULLUP | MUX_MODE7 ) /* gpio_83, NC*/
+			0xCA ( PIN_OUTPUT | MUX_MODE7 ) /* gpio_85, NC*/
+			0xCC ( PIN_OUTPUT | MUX_MODE7 ) /* gpio_86, NC*/
+			0xCE ( PIN_OUTPUT | MUX_MODE7 ) /* gpio_87, NC*/
+			0xD4 ( PIN_OUTPUT | MUX_MODE7 ) /* gpio_90, NC*/
+			0x112 ( PIN_INPUT | MUX_MODE7 ) /* safe_mode, NC*/
+			0x13C ( PIN_INPUT | MUX_MODE7 ) /* safe_mode, NC*/
+			0x144 ( PIN_INPUT_PULLUP | MUX_MODE7 ) /* safe_mode, NC */
+			0x146 ( PIN_INPUT | MUX_MODE7 ) /* safe_mode, NC */
+			0x14E ( PIN_INPUT | MUX_MODE7 ) /* safe_mode, NC */
+			0x150 ( PIN_INPUT | MUX_MODE7 ) /* safe_mode, NC */
+			0x154 ( PIN_INPUT | MUX_MODE7 ) /* safe_mode, NC*/
+			0x156 ( PIN_INPUT | MUX_MODE7 ) /* safe_mode, NC*/
+			0x158 ( PIN_INPUT | MUX_MODE7 ) /* safe_mode, NC*/
+			0x15A ( PIN_INPUT | MUX_MODE7 ) /* safe_mode, NC*/
+			0x160 ( PIN_INPUT | MUX_MODE7 ) /* safe_mode, NC*/
+			0x166 ( PIN_INPUT | MUX_MODE7 ) /* safe_mode, NC*/
+			0x168 ( PIN_INPUT | MUX_MODE7 ) /* safe_mode, NC*/
+			0x196 ( PIN_INPUT_PULLUP | MUX_MODE7 ) /* safe_mode, NC*/
+			0x1A0 ( PIN_INPUT_PULLDOWN | MUX_MODE7 ) /* safe_mode, NC*/
+			0x1A2 ( PIN_INPUT | MUX_MODE7 ) /* safe_mode, NC*/
+			0x1A4 ( PIN_INPUT_PULLDOWN | MUX_MODE7 ) /* safe_mode, NC*/
+			0x1A6 ( PIN_INPUT | MUX_MODE7 ) /* safe_mode, NC*/
+			0x1A8 ( PIN_INPUT | MUX_MODE7 ) /* safe_mode, NC*/
+			0x1AE ( PIN_INPUT_PULLDOWN | MUX_MODE7 ) /* safe_mode, NC*/
+			0x1B2 ( PIN_INPUT_PULLUP | MUX_MODE7 ) /* safe_mode, NC */
+			0x1B4 ( PIN_INPUT_PULLUP | MUX_MODE7 ) /* safe_mode, NC*/
+			0x1B8 ( PIN_INPUT_PULLUP | MUX_MODE7 ) /* safe_mode, NC*/
+			0x1BA ( PIN_INPUT_PULLUP | MUX_MODE7 ) /* safe_mode, NC*/
+			0x1E4 ( PIN_INPUT_PULLUP | MUX_MODE7 ) /* safe_mode, NC*/
+			0x1E6 ( PIN_INPUT_PULLUP | MUX_MODE7 ) /* safe_mode, NC*/
+			0x5A8 ( PIN_INPUT | MUX_MODE4 ) /* gpio_12, NC*/
+			0x5AA ( PIN_INPUT | MUX_MODE4 ) /* gpio_13, NC*/
+			0x5B2 ( PIN_INPUT | MUX_MODE4 ) /* gpio_17, NC*/
+			0x5B4 ( PIN_INPUT | MUX_MODE4 ) /* gpio_18, NC*/
+			0x5B6 ( PIN_INPUT | MUX_MODE4 ) /* gpio_19, NC*/
+			0x5B8 ( PIN_INPUT | MUX_MODE4 ) /* gpio_20, NC*/
+			0x5BC ( PIN_INPUT | MUX_MODE4 ) /* gpio_22, NC*/
+			0x5BE ( PIN_INPUT | MUX_MODE4 ) /* gpio_23, NC*/
+			0x5C0 ( PIN_INPUT | MUX_MODE4 ) /* gpio_24, NC*/
+			0x5C2 ( PIN_INPUT | MUX_MODE4 ) /* gpio_25, NC*/
+			0x5C4 ( PIN_INPUT | MUX_MODE4 ) /* gpio_26, NC*/
+			0x5C6 ( PIN_INPUT | MUX_MODE4 ) /* gpio_27, NC*/
+			0x5C8 ( PIN_INPUT | MUX_MODE4 ) /* gpio_28, NC*/
+			0x5CA ( PIN_INPUT | MUX_MODE4 ) /* gpio_29, NC*/
+			0x9EA ( PIN_INPUT | MUX_MODE7 ) /* safe_mode, NC */
+			/* We've no-stuffed the EEPROM, so nothing on the next three pins */
+			0xBA ( PIN_INPUT_PULLDOWN | MUX_MODE7 ) /* gpio_77, WP_EEPROM*/
+			0x192 ( PIN_INPUT_PULLUP | MUX_MODE7 ) /* i2c3_scl, CPU_I2C3_SCL*/
+			0x194 ( PIN_INPUT_PULLUP | MUX_MODE7 ) /* i2c3_sda, CPU_I2C3_SDA*/
+		>;
+	};
 } ;
 
 &gpmc {
@@ -452,6 +794,8 @@
 	nand@0,0 {
 		compatible = "ti,omap2-nand";
 		reg = <0 0 0>;
+		pinctrl-names = "default";
+		pintctrl-0 = <&nand_pins>;
 		interrupt-parent = <&gpmc>;
 		nand-bus-width = <16>;
 		#address-cells = <1>;
