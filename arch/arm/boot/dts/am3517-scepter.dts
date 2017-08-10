@@ -293,9 +293,7 @@
 	pinctrl-names = "default";
 	pinctrl-0 = <&mcbsp1_pins>;
 	#sound-dai-cells = <1>;
-	/* These are defined incorrectly in omap3.dtsi. See section 13.3.3.1 of the TRM */
-	dmas = <&sdma 30>, <&sdma 31>;
-	dma-names = "tx", "rx";
+	/* The DMAs specified in the TRM are zero-indexed. Device tree is one indexed. No need to fix here. */
 };
 
 /* Slave */
@@ -303,9 +301,7 @@
 	status = "okay";
 	pinctrl-names = "default";
 	pinctrl-0 = <&mcbsp2_pins>;
-	/* These are defined incorrectly in omap3.dtsi. See section 13.3.3.1 of the TRM */
-	dmas = <&sdma 32>, <&sdma 33>;
-	dma-names = "tx", "rx";
+	/* The DMAs specified in the TRM are zero-indexed. Device tree is one indexed. No need to fix here. */
 };
 
 /* PPS */
@@ -488,7 +484,7 @@
 	};
 
 	/* Master ADC0 */
-	mcbsp1_pins: pinmux_mcbsp1_pins {
+	mcbsp1_pins: mcbsp1_pins {
 		pinctrl-single,pins = <
 			0x15C ( PIN_INPUT | MUX_MODE0 ) /* mcbsp1_clkr, ADC_BCLK_1*/
 			0x15E ( PIN_INPUT_PULLUP | MUX_MODE0 ) /* mcbsp1_fsr, FRAME_SYNC*/
@@ -500,7 +496,7 @@
 	};
 
 	/* Slave ADC1 */
-	mcbsp2_pins: pinmux_mcbsp2_pins {
+	mcbsp2_pins: mcbsp2_pins {
 		pinctrl-single,pins = <
 			0x10C ( PIN_INPUT | MUX_MODE0 ) /* mcbsp2_fsx, FRAME_SYNC*/
 			0x10E ( PIN_INPUT | MUX_MODE0 ) /* mcbsp2_clkx, ADC_BCLK_1*/
