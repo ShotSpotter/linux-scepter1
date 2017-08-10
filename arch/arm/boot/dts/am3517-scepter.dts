@@ -71,24 +71,24 @@
 	sound {
 		status = "okay";
 		compatible = "simple-audio-card";
-		simple-audio-card,name = "WM8737";
-		simple-audio-card,widgets =
-			"Line", "Line In";
-		simple-audio-card,routing =
-			"LINPUT1", "Line In",
+		simple-audio-card,name = "WM8737x2";
+		simple-audio-card,widgets = "Line", "Line In";
+	      simple-audio-card,routing =
+	      	"LINPUT1", "Line In",
 			"RINPUT1", "Line In";
-		/*simple-audio-card,dai-link {
+
+		simple-audio-card,dai-link@0 { /* master */
 			format = "dsp_b";
 			bitclock-master = <&sound_master>;
 			frame-master = <&sound_master>;
 			cpu {
 				sound-dai = <&mcbsp1 0>;
-			}
+			};
 			sound_master: codec {
-				sound-dai = <&wm8737master>;
+				sound-dai = <&wm8737master 0>;
 				clocks = <&clk_audio_fixed>;
 			};
-		  };*/
+		};
 	};
 }; /* / */
 
@@ -252,21 +252,20 @@
 
 &i2c2 {
 	status = "okay";
-	clock-frequency = <400000>;
-
+	clock-frequency = <100000>;
 	pinctrl-names = "default";
 	pinctrl-0 = <&wm8737_pins_default>;
-
-	wm8737master: wm8737@0b {
+	
+	wm8737master: wm8737@1a {
 		compatible = "wlf,wm8737";
-		reg = <0x0b>;
+		reg = <0x1a>;
 		status = "okay";
 		/* Regulators */
-		DCVDD-supply = <&vmmc_fixed>;
+		/* DCVDD-supply = <&vmmc_fixed>;
 		DBVDD-supply = <&vmmc_fixed>;
 		AVDD-supply = <&vmmc_fixed>;
-		MVDD-supply = <&vmmc_fixed>;
-		/*  #sound-dai-cells = <1>;*/
+		MVDD-supply = <&vmmc_fixed>; */
+		#sound-dai-cells = <1>;
 	};
 
 	wm8737slave: wm8737@1b {
@@ -274,16 +273,17 @@
 		reg = <0x1b>;
 		status = "okay";
 		/* Regulators */
-		DCVDD-supply = <&vmmc_fixed>;
+		/* DCVDD-supply = <&vmmc_fixed>;
 		DBVDD-supply = <&vmmc_fixed>;
 		AVDD-supply = <&vmmc_fixed>;
-		MVDD-supply = <&vmmc_fixed>;
+		MVDD-supply = <&vmmc_fixed>; */
 		#sound-dai-cells = <0>;
 	};
 };
 
 &i2c3 {
-	clock-frequency = <400000>;
+	/* This is for the EEPROM, which is no longer populated */
+	status = "disabled";
 };
 
 
@@ -292,7 +292,10 @@
 	status = "okay";
 	pinctrl-names = "default";
 	pinctrl-0 = <&mcbsp1_pins>;
-	/*#sound-dai-cells = <1>;*/
+	#sound-dai-cells = <1>;
+	/* These are defined incorrectly in omap3.dtsi. See section 13.3.3.1 of the TRM */
+	dmas = <&sdma 30>, <&sdma 31>;
+	dma-names = "tx", "rx";
 };
 
 /* Slave */
@@ -300,11 +303,14 @@
 	status = "okay";
 	pinctrl-names = "default";
 	pinctrl-0 = <&mcbsp2_pins>;
+	/* These are defined incorrectly in omap3.dtsi. See section 13.3.3.1 of the TRM */
+	dmas = <&sdma 32>, <&sdma 33>;
+	dma-names = "tx", "rx";
 };
 
 /* PPS */
 &mcbsp3 {
-	/* We're using GPIO pps instead, so let's disable this */
+	/* We're now using GPIO pps instead of this, so let's disable this */
 	status = "disabled";
 };
 
@@ -336,11 +342,13 @@
 };
 
 &aes {
-	status = "okay";
+	/* we don't have one of these */
+	status = "disabled";
 };
 
 &sham {
-	status = "okay";
+	/* we don't have one of these */
+	status = "disabled";
 };
 
 &mmc3 {
@@ -475,6 +483,7 @@
 		pinctrl-single,pins = <
 			0x18E ( PIN_INPUT_PULLUP | MUX_MODE0 ) /* i2c2_scl, CPU_I2C2_SCL*/
 			0x190 ( PIN_INPUT_PULLUP | MUX_MODE0 ) /* i2c2_sda, CPU_I2C2_SDA*/
+			0x1CC ( PIN_OUTPUT | MUX_MODE4 ) /* gpio_106, CPU_ENABLE_ADC_CLK*/
 		>;
 	};
 
@@ -483,6 +492,8 @@
 		pinctrl-single,pins = <
 			0x15C ( PIN_INPUT | MUX_MODE0 ) /* mcbsp1_clkr, ADC_BCLK_1*/
 			0x15E ( PIN_INPUT_PULLUP | MUX_MODE0 ) /* mcbsp1_fsr, FRAME_SYNC*/
+			0x142 ( PIN_INPUT | MUX_MODE0 ) /* mcbsp3_fsx, FRAME_SYNC*/
+			0x1AC ( PIN_INPUT_PULLDOWN | MUX_MODE7 ) /* gpt11_pwm_evt, FRAME_SYNC_8192*/
 			0x162 ( PIN_INPUT | MUX_MODE0 ) /* mcbsp1_dr, ADCDAT_L*/
 			0x164 ( PIN_INPUT | MUX_MODE0 ) /* mcbsp_clks, ADC_MCLK*/
 		>;
@@ -552,7 +563,6 @@
 			0x4E ( PIN_OUTPUT | MUX_MODE4 ) /* gpio_36, RELAY*/
 			0x8C ( PIN_INPUT_PULLDOWN | MUX_MODE4 ) /* gpio_58, ETHERNET_IRQ_N*/
 			0xA2 ( PIN_OUTPUT | MUX_MODE4 ) /* gpio_65, CPU_ETHERNET_RST_N*/
-			0x1CC ( PIN_OUTPUT | MUX_MODE4 ) /* gpio_106, CPU_ENABLE_ADC_CLK*/
 			0x1CE ( PIN_INPUT | MUX_MODE0 ) /* rmii_mdio_data, CPU_RMII_MDIO_DATA*/
 			0x1D0 ( PIN_OUTPUT | MUX_MODE0 ) /* rmii_mdio_clk, CPU_RMII_MDIO_CLK*/
 			0x1D2 ( PIN_INPUT | MUX_MODE0 ) /* rmii_rxd0, CPU_RMII_RXD0*/
@@ -713,8 +723,6 @@
 			0x124 ( PIN_OUTPUT | MUX_MODE4 ) /* gpio_128, CPU_PWRON_ADC*/
 			0x9D8 ( PIN_INPUT | MUX_MODE0 ) /* sys_nreswarm, WARM_NRST */
 			0x140 ( PIN_INPUT | MUX_MODE0 ) /* mcbsp3_clkx, ADC_BCLK1*/
-			0x142 ( PIN_INPUT | MUX_MODE0 ) /* mcbsp3_fsx, FRAME_SYNC*/
-			0x1AC ( PIN_INPUT_PULLDOWN | MUX_MODE7 ) /* gpt11_pwm_evt, FRAME_SYNC_8192*/
 			0x1B0 ( PIN_INPUT_PULLUP | MUX_MODE0 ) /* sys_nirq, NIRQ */
 			0x1C0 ( INPUT_EN | PULL_UP | MUX_MODE4 ) /* gpio_100, 4356_GOOD*/
 			0x4E ( PIN_OUTPUT | MUX_MODE4 ) /* gpio_36, RELAY*/
