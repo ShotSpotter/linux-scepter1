@@ -41,6 +41,11 @@
 			gpios = <&gpio2 11 GPIO_ACTIVE_HIGH>; /* GPIO 43 */
 			default-state = "on";
 		};
+		led@3 {
+			label = "mclk";
+			gpios = <&gpio4 10 GPIO_ACTIVE_HIGH>;
+			default-state = "on";
+		};
 	};
 	
 	pps {
@@ -92,7 +97,7 @@
 		regulator-name = "mclk_enable";
 		regulator-min-microvolt = <3300000>;
 		regulator-max-microvolt = <3300000>;
-		gpio = <&gpio4 10 GPIO_ACTIVE_HIGH>; /* GPIO 106 */
+// 		gpio = <&gpio4 10 GPIO_ACTIVE_HIGH>; /* GPIO 106 */
 		startup-delay-us = <70000>;
 		enable-active-high;
 	};
@@ -126,6 +131,28 @@
 			};	
 		};
 	};
+
+	// What we want to do is set up as:
+	// * MCLK always running
+	// * McBSP2 (the "cpu") is a slave
+	// * McBSP2_CLKX is configured as McBSP2_CLKR
+	// * McBSP2 gets bitclock from ADC0
+	// * MCBSP2 gets frameclock from ADC0
+	// * ADC1 (the "codec") is a slave
+	// * ADC1 gets bitclock from ADC0
+	// * ADC1 gets frameclock from ADC0
+	//
+	// It would appear that the existing kernel believes
+	// that cpu master status = not (codec master status).
+	// Since we must have mcbsp as slave, we currently
+	// set codec as master or it will not work.
+	//
+	// A hack that might work is to make a new
+	// simple-sound-card,boss node that species what
+	// codec is the boss, and set that mclck up in
+	// wm8737_set_dai_sysclk (in codec driver) for the
+	// "boss codec" instead of setting up mclk for this codec
+
 	wm8737slave-card {
 		status = "okay";
 		compatible = "simple-audio-card";
@@ -138,12 +165,16 @@
 			format = "dsp_b";
 			bitclock-master = <&sound_slave>;
 			frame-master = <&sound_slave>;
+
 			cpu {
 				sound-dai = <&mcbsp2 0>;
 			};
 			sound_slave: codec {
 				sound-dai = <&wm8737slave 0>;
 				clocks = <&clk_audio_fixed>;
+				// These are not actually being read.
+				//bitclock-master = <&wm8737master 0>;
+				//frame-master = <&wm8737master 0>;
 			};	
 		};
 	};

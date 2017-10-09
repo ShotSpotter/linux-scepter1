@@ -338,6 +338,11 @@ static int wm8737_hw_params(struct snd_pcm_substream *substream,
 	int i;
 	u16 clocking = 0;
 	u16 af = 0;
+	
+	printk(KERN_ERR "params_rate(params): %d\n", params_rate(params));
+	printk(KERN_ERR "params_width(params): %d\n", params_width(params));
+	printk(KERN_ERR "coeff_div[i].rate: %d\n", coeff_div[i].rate);
+	printk(KERN_ERR "wm8737->mclk: %d\n", wm8737->mclk);
 
 	for (i = 0; i < ARRAY_SIZE(coeff_div); i++) {
 		if (coeff_div[i].rate != params_rate(params))
@@ -375,7 +380,10 @@ static int wm8737_hw_params(struct snd_pcm_substream *substream,
 	default:
 		return -EINVAL;
 	}
-
+	printk(KERN_ERR "af: %#x\n", af);
+	printk(KERN_ERR "WM8737_WL_MASK: %#x\n", WM8737_WL_MASK);
+	printk(KERN_ERR "clocking: %#x\n", clocking);
+	printk(KERN_ERR "WM8737_SR_MASK: %#x\n", WM8737_SR_MASK);
 	snd_soc_update_bits(codec, WM8737_AUDIO_FORMAT, WM8737_WL_MASK, af);
 	snd_soc_update_bits(codec, WM8737_CLOCKING,
 			    WM8737_USB_MODE | WM8737_CLKDIV2 | WM8737_SR_MASK,
@@ -408,16 +416,20 @@ static int wm8737_set_dai_sysclk(struct snd_soc_dai *codec_dai,
 static int wm8737_set_dai_fmt(struct snd_soc_dai *codec_dai,
 		unsigned int fmt)
 {
+	printk(KERN_ERR "I am in wm8737_set_dai_fmt.\n");
 	struct snd_soc_codec *codec = codec_dai->codec;
 	u16 af = 0;
 
 	switch (fmt & SND_SOC_DAIFMT_MASTER_MASK) {
 	case SND_SOC_DAIFMT_CBM_CFM:
+		printk(KERN_ERR "I'm a codec master\n");
 		af |= WM8737_MS;
 		break;
 	case SND_SOC_DAIFMT_CBS_CFS:
+		printk(KERN_ERR "I'm a codec slave\n");
 		break;
 	default:
+		printk(KERN_ERR "I'm a broken codec\n");
 		return -EINVAL;
 	}
 

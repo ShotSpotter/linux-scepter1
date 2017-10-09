@@ -266,7 +266,13 @@ static int asoc_simple_card_parse_daifmt(struct device_node *node,
 	struct device_node *bitclkmaster = NULL;
 	struct device_node *framemaster = NULL;
 	unsigned int daifmt;
+	printk(KERN_WARNING "before node pointer: %d\n", (int) node);
+	printk(KERN_WARNING "before codec pointer: %d\n", (int) codec);
+	printk(KERN_WARNING "before framemaster pointer: %d\n", (int) framemaster);	
+	printk(KERN_WARNING "before bitclkmaster pointer: %d\n", (int) bitclkmaster);
 
+
+	printk(KERN_WARNING "parsing the node (card?)\n");
 	daifmt = snd_soc_of_parse_daifmt(node, prefix,
 					 &bitclkmaster, &framemaster);
 	daifmt &= ~SND_SOC_DAIFMT_MASTER_MASK;
@@ -282,12 +288,24 @@ static int asoc_simple_card_parse_daifmt(struct device_node *node,
 		daifmt = snd_soc_of_parse_daifmt(codec, NULL, NULL, NULL) |
 			(daifmt & ~SND_SOC_DAIFMT_CLOCK_MASK);
 	} else {
-		if (codec == bitclkmaster)
+		if (codec == bitclkmaster){
+			printk(KERN_WARNING "codec is bitclock master line 286!\n");
 			daifmt |= (codec == framemaster) ?
 				SND_SOC_DAIFMT_CBM_CFM : SND_SOC_DAIFMT_CBM_CFS;
-		else
+			printk(KERN_WARNING "after codec pointer: %d\n", (int) codec);
+			printk(KERN_WARNING "after framemaster pointer: %d\n", (int) framemaster);	
+			printk(KERN_WARNING "after bitclkmaster pointer: %d\n", (int) bitclkmaster);	
+			if (codec == framemaster) {
+				printk (KERN_WARNING "codec is SND_SOC_DAIFMT_CBM_CFM\n");
+			}
+		 } else {
+		 	printk(KERN_WARNING "codec is bitclock slave line 290!\n");
 			daifmt |= (codec == framemaster) ?
 				SND_SOC_DAIFMT_CBS_CFM : SND_SOC_DAIFMT_CBS_CFS;
+			if (codec == framemaster) {
+				printk (KERN_WARNING "codec is SND_SOC_DAIFMT_CBS_CFM\n");
+			}
+		}
 	}
 
 	dai_link->dai_fmt = daifmt;

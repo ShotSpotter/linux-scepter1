@@ -227,17 +227,22 @@ static int omap_mcbsp_dai_hw_params(struct snd_pcm_substream *substream,
 	int pkt_size = 0;
 	unsigned int format, div, framesize, master;
 
+	printk(KERN_ERR "mcbsp: in dai hw params\n");
 	dma_data = snd_soc_dai_get_dma_data(cpu_dai, substream);
+// 	printk(KERN_ERR "mcbsp dma_data: %x \n", 
 	channels = params_channels(params);
 
 	switch (params_format(params)) {
 	case SNDRV_PCM_FORMAT_S16_LE:
 		wlen = 16;
+		printk(KERN_ERR "mcbsp hwparams s16le\n");
 		break;
 	case SNDRV_PCM_FORMAT_S32_LE:
 		wlen = 32;
+		printk(KERN_ERR "mcbsp hwparams s32le\n");
 		break;
 	default:
+	printk(KERN_ERR "mcbsp hwparams no format for you\n");
 		return -EINVAL;
 	}
 	if (mcbsp->pdata->buffer_size) {
@@ -277,6 +282,8 @@ static int omap_mcbsp_dai_hw_params(struct snd_pcm_substream *substream,
 	dma_data->maxburst = pkt_size;
 
 	if (mcbsp->configured) {
+		printk(KERN_ERR "McBSP already configured by another stream\n");
+
 		/* McBSP already configured by another stream */
 		return 0;
 	}
@@ -296,6 +303,9 @@ static int omap_mcbsp_dai_hw_params(struct snd_pcm_substream *substream,
 		wpf--;
 		regs->rcr2	|= RFRLEN2(wpf - 1);
 		regs->xcr2	|= XFRLEN2(wpf - 1);
+		printk(KERN_ERR "mcbsp: using dual phase frames\n");
+	} else {
+	printk(KERN_ERR "mcbsp: not using dual phase frames\n");
 	}
 
 	regs->rcr1	|= RFRLEN1(wpf - 1);
@@ -308,6 +318,8 @@ static int omap_mcbsp_dai_hw_params(struct snd_pcm_substream *substream,
 		regs->rcr1	|= RWDLEN1(OMAP_MCBSP_WORD_16);
 		regs->xcr2	|= XWDLEN2(OMAP_MCBSP_WORD_16);
 		regs->xcr1	|= XWDLEN1(OMAP_MCBSP_WORD_16);
+		printk(KERN_ERR "mcbsp: fmt s16le\n");
+
 		break;
 	case SNDRV_PCM_FORMAT_S32_LE:
 		/* Set word lengths */
@@ -315,8 +327,10 @@ static int omap_mcbsp_dai_hw_params(struct snd_pcm_substream *substream,
 		regs->rcr1	|= RWDLEN1(OMAP_MCBSP_WORD_32);
 		regs->xcr2	|= XWDLEN2(OMAP_MCBSP_WORD_32);
 		regs->xcr1	|= XWDLEN1(OMAP_MCBSP_WORD_32);
+		printk(KERN_ERR "mcbsp: fmt s32le\n");
 		break;
 	default:
+		printk(KERN_ERR "mcbsp: Unsupported PCM format\n");
 		/* Unsupported PCM format */
 		return -EINVAL;
 	}
@@ -325,16 +339,28 @@ static int omap_mcbsp_dai_hw_params(struct snd_pcm_substream *substream,
 	 * by _counting_ BCLKs. Calculate frame size in BCLKs */
 	master = mcbsp->fmt & SND_SOC_DAIFMT_MASTER_MASK;
 	if (master ==	SND_SOC_DAIFMT_CBS_CFS) {
+		printk(KERN_ERR "This McBSP is master\n");
+		printk(KERN_ERR "mcbsp->clk_div: %d \n",mcbsp->clk_div);
 		div = mcbsp->clk_div ? mcbsp->clk_div : 1;
+		printk(KERN_ERR "mcbsp params_rate: %d\n", params_rate(params));
+		printk(KERN_ERR "mcbsp div: %d\n",div);
 		framesize = (mcbsp->in_freq / div) / params_rate(params);
 
 		if (framesize < wlen * channels) {
+			printk(KERN_ERR "framesize: %d\n", framesize);
+			printk(KERN_ERR "wlen: %d\n", wlen);
+			printk(KERN_ERR "channels: %d\n", channels);
 			printk(KERN_ERR "%s: not enough bandwidth for desired rate and "
 					"channels\n", __func__);
 			return -EINVAL;
 		}
-	} else
+	} else {
+		printk(KERN_ERR "This McBSP is slave\n");
 		framesize = wlen * channels;
+		printk(KERN_ERR "framesize: %d\n", framesize);
+		printk(KERN_ERR "wlen: %d\n", wlen);
+		printk(KERN_ERR "channels: %d\n", channels);	
+	}
 
 	/* Set FS period and length in terms of bit clock periods */
 	regs->srgr2	&= ~FPER(0xfff);
@@ -344,11 +370,13 @@ static int omap_mcbsp_dai_hw_params(struct snd_pcm_substream *substream,
 	case SND_SOC_DAIFMT_LEFT_J:
 		regs->srgr2	|= FPER(framesize - 1);
 		regs->srgr1	|= FWID((framesize >> 1) - 1);
+		printk(KERN_ERR "mcbsp daifmt I2S or LeftJusty\n");
 		break;
 	case SND_SOC_DAIFMT_DSP_A:
 	case SND_SOC_DAIFMT_DSP_B:
 		regs->srgr2	|= FPER(framesize - 1);
 		regs->srgr1	|= FWID(0);
+		printk(KERN_ERR "mcbsp daifmt DSP A or B\n");
 		break;
 	}
 
@@ -370,8 +398,12 @@ static int omap_mcbsp_dai_set_dai_fmt(struct snd_soc_dai *cpu_dai,
 	struct omap_mcbsp_reg_cfg *regs = &mcbsp->cfg_regs;
 	bool inv_fs = false;
 
+	printk(KERN_ERR "mcbsp dai set dai fmt\n");
+
 	if (mcbsp->configured)
 		return 0;
+
+	printk(KERN_ERR "mcbsp dai not configured yet\n");
 
 	mcbsp->fmt = fmt;
 	memset(regs, 0, sizeof(*regs));
@@ -395,6 +427,8 @@ static int omap_mcbsp_dai_set_dai_fmt(struct snd_soc_dai *cpu_dai,
 		/* 1-bit data delay */
 		regs->rcr2	|= RDATDLY(1);
 		regs->xcr2	|= XDATDLY(1);
+			printk(KERN_ERR "mcbsp dai set dai fmt i2s\n");
+
 		break;
 	case SND_SOC_DAIFMT_LEFT_J:
 		/* 0-bit data delay */
@@ -403,6 +437,8 @@ static int omap_mcbsp_dai_set_dai_fmt(struct snd_soc_dai *cpu_dai,
 		regs->spcr1	|= RJUST(2);
 		/* Invert FS polarity configuration */
 		inv_fs = true;
+			printk(KERN_ERR "mcbsp dai set dai fmt leftj\n");
+
 		break;
 	case SND_SOC_DAIFMT_DSP_A:
 		/* 1-bit data delay */
@@ -410,6 +446,8 @@ static int omap_mcbsp_dai_set_dai_fmt(struct snd_soc_dai *cpu_dai,
 		regs->xcr2      |= XDATDLY(1);
 		/* Invert FS polarity configuration */
 		inv_fs = true;
+			printk(KERN_ERR "mcbsp dai set dai fmt dsp a\n");
+
 		break;
 	case SND_SOC_DAIFMT_DSP_B:
 		/* 0-bit data delay */
@@ -417,9 +455,13 @@ static int omap_mcbsp_dai_set_dai_fmt(struct snd_soc_dai *cpu_dai,
 		regs->xcr2      |= XDATDLY(0);
 		/* Invert FS polarity configuration */
 		inv_fs = true;
+			printk(KERN_ERR "mcbsp dai set dai fmt dsp b\n");
+
 		break;
 	default:
 		/* Unsupported data format */
+			printk(KERN_ERR "mcbsp dai set dai fmt sux2bu!!\n");
+
 		return -EINVAL;
 	}
 
@@ -430,14 +472,19 @@ static int omap_mcbsp_dai_set_dai_fmt(struct snd_soc_dai *cpu_dai,
 				   CLKXM | CLKRM;
 		/* Sample rate generator drives the FS */
 		regs->srgr2	|= FSGM;
+			printk(KERN_ERR "mcbsp dai set dai fmt is master (CBS_CFS)\n");
+
 		break;
 	case SND_SOC_DAIFMT_CBM_CFS:
 		/* McBSP slave. FS clock as output */
 		regs->srgr2	|= FSGM;
 		regs->pcr0	|= FSXM | FSRM;
+			printk(KERN_ERR "mcbsp dai set dai fmt mcbsp slave/master (CBM_CFS) \n");
+
 		break;
 	case SND_SOC_DAIFMT_CBM_CFM:
 		/* McBSP slave */
+			printk(KERN_ERR "mcbsp dai set dai fmt slave CBM CFM\n");
 		break;
 	default:
 		/* Unsupported master/slave configuration */
@@ -454,16 +501,22 @@ static int omap_mcbsp_dai_set_dai_fmt(struct snd_soc_dai *cpu_dai,
 		 */
 		regs->pcr0	|= FSXP | FSRP |
 				   CLKXP | CLKRP;
+				   	printk(KERN_ERR "mcbsp dai set dai fmt FS NB_NF\n");
+
 		break;
 	case SND_SOC_DAIFMT_NB_IF:
 		regs->pcr0	|= CLKXP | CLKRP;
+		printk(KERN_ERR "mcbsp dai set dai fmt FS NB_IF\n");
 		break;
 	case SND_SOC_DAIFMT_IB_NF:
 		regs->pcr0	|= FSXP | FSRP;
+		printk(KERN_ERR "mcbsp dai set dai fmt FS IB_IF\n");
 		break;
 	case SND_SOC_DAIFMT_IB_IF:
+	printk(KERN_ERR "mcbsp dai set dai fmt FS IB_IF\n");
 		break;
 	default:
+	printk(KERN_ERR "mcbsp dai set dai fmt FS no soup for you\n");
 		return -EINVAL;
 	}
 	if (inv_fs == true)
@@ -478,13 +531,17 @@ static int omap_mcbsp_dai_set_clkdiv(struct snd_soc_dai *cpu_dai,
 	struct omap_mcbsp *mcbsp = snd_soc_dai_get_drvdata(cpu_dai);
 	struct omap_mcbsp_reg_cfg *regs = &mcbsp->cfg_regs;
 
-	if (div_id != OMAP_MCBSP_CLKGDV)
-		return -ENODEV;
+printk(KERN_ERR "mcbsp dai set clkdiv\n");
 
+	if (div_id != OMAP_MCBSP_CLKGDV) {
+	printk(KERN_ERR "mcbsp dai no clkdiv for you\n");
+		return -ENODEV;
+}
 	mcbsp->clk_div = div;
+	printk(KERN_ERR "mcbsp dai set clockdiv: %d\n",div);
 	regs->srgr1	&= ~CLKGDV(0xff);
 	regs->srgr1	|= CLKGDV(div - 1);
-
+printk(KERN_ERR "mcbsp dai set clockdiv end\n");
 	return 0;
 }
 
@@ -495,12 +552,16 @@ static int omap_mcbsp_dai_set_dai_sysclk(struct snd_soc_dai *cpu_dai,
 	struct omap_mcbsp *mcbsp = snd_soc_dai_get_drvdata(cpu_dai);
 	struct omap_mcbsp_reg_cfg *regs = &mcbsp->cfg_regs;
 	int err = 0;
-
+printk(KERN_ERR "mcbsp dai set sysclk\n");
 	if (mcbsp->active) {
-		if (freq == mcbsp->in_freq)
+		if (freq == mcbsp->in_freq) {
+			printk(KERN_ERR "mcbsp dai set sysclk happy\n");
 			return 0;
-		else
+			}
+		else {
+		printk(KERN_ERR "mcbsp dai set sysclk sad\n");
 			return -EBUSY;
+			}
 	}
 
 	mcbsp->in_freq = freq;
@@ -510,22 +571,27 @@ static int omap_mcbsp_dai_set_dai_sysclk(struct snd_soc_dai *cpu_dai,
 	switch (clk_id) {
 	case OMAP_MCBSP_SYSCLK_CLK:
 		regs->srgr2	|= CLKSM;
+		printk(KERN_ERR "mcbsp dai set sysclk %d clk sm \n", clk_id);
 		break;
 	case OMAP_MCBSP_SYSCLK_CLKS_FCLK:
 		if (mcbsp_omap1()) {
 			err = -EINVAL;
+			printk(KERN_ERR "mcbsp dai set sysclk %d clk sm is sad\n", clk_id);
 			break;
 		}
 		err = omap2_mcbsp_set_clks_src(mcbsp,
 					       MCBSP_CLKS_PRCM_SRC);
+	       printk(KERN_ERR "mcbsp dai set sysclk %d clk fclk \n", clk_id);
 		break;
 	case OMAP_MCBSP_SYSCLK_CLKS_EXT:
 		if (mcbsp_omap1()) {
 			err = 0;
+			printk(KERN_ERR "mcbsp dai set sysclk is happy\n");
 			break;
 		}
 		err = omap2_mcbsp_set_clks_src(mcbsp,
 					       MCBSP_CLKS_PAD_SRC);
+       printk(KERN_ERR "mcbsp dai set sysclk clk extclok");
 		break;
 
 	case OMAP_MCBSP_SYSCLK_CLKX_EXT:
@@ -538,16 +604,20 @@ static int omap_mcbsp_dai_set_dai_sysclk(struct snd_soc_dai *cpu_dai,
 		 * set_dai_sysclk() _needs_ to be called after set_dai_fmt().
 		 */
 		regs->pcr0	&= ~CLKXM;
+		printk(KERN_ERR "mcbsp dai set sysclk ext clkx\n");
 		break;
 	case OMAP_MCBSP_SYSCLK_CLKR_EXT:
 		regs->pcr0	|= SCLKME;
 		/* Disable ouput on CLKR pin in master mode */
 		regs->pcr0	&= ~CLKRM;
+		printk(KERN_ERR "mcbsp dai set sysclk clk ext clkr\n");
 		break;
 	default:
+	printk(KERN_ERR "mcbsp dai set sysclk clk no extclk for you\n");
 		err = -ENODEV;
 	}
 
+printk(KERN_ERR "mcbsp dai set sysclk clk err final \n");
 	return err;
 }
 

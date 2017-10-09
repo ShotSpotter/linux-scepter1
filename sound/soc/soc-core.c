@@ -3457,14 +3457,38 @@ unsigned int snd_soc_of_parse_daifmt(struct device_node *np,
 	 */
 	snprintf(prop, sizeof(prop), "%sbitclock-master", prefix);
 	bit = !!of_get_property(np, prop, NULL);
-	if (bit && bitclkmaster)
-		*bitclkmaster = of_parse_phandle(np, prop, 0);
+	if (bit) {
+		printk(KERN_DEBUG "bitclock-master node exists\n");
+		}
+	if (bitclkmaster) {
+		printk(KERN_ERR "bitclkmaster exists\n");
+	} else {
+		printk(KERN_ERR "bitclkmaster is null\n");
+	}
 
+	if (bit && bitclkmaster) {
+		*bitclkmaster = of_parse_phandle(np, prop, 0);
+		printk(KERN_ERR "parsed your device tree node\n");
+	} else {
+		printk(KERN_ERR "shamelessly ignored your configuration\n");
+		if (bit) {
+			printk(KERN_ERR "force scan of node anyway because it exists\n");
+			*bitclkmaster = of_parse_phandle(np, prop, 0);
+		}
+	}
+	
 	snprintf(prop, sizeof(prop), "%sframe-master", prefix);
 	frame = !!of_get_property(np, prop, NULL);
-	if (frame && framemaster)
+	if (frame && framemaster) {
+		printk (KERN_ERR "fm scan propnode\n");
 		*framemaster = of_parse_phandle(np, prop, 0);
-
+	} else {
+		printk(KERN_ERR "fm shamelessly ignored your configuration\n");
+		if (frame) {
+			printk(KERN_ERR "fm force scan of node anyway because it exists\n");
+			*framemaster = of_parse_phandle(np, prop, 0);
+		}
+	}
 	switch ((bit << 4) + frame) {
 	case 0x11:
 		format |= SND_SOC_DAIFMT_CBM_CFM;
